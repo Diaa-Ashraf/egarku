@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Ads\Tables;
 
 use App\Models\Ad;
-use App\Models\Notification;
+use App\Models\UserNotification as Notification;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -56,13 +56,13 @@ class AdsTable
                 TextColumn::make('status')
                     ->label('الحالة')
                     ->badge()
-                    ->color(fn($state) => match($state) {
+                    ->color(fn($state) => match ($state) {
                         'pending'  => 'warning',
                         'active'   => 'success',
                         'rejected' => 'danger',
                         'expired'  => 'gray',
                     })
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'pending'  => 'انتظار',
                         'active'   => 'نشط',
                         'rejected' => 'مرفوض',
@@ -118,13 +118,14 @@ class AdsTable
                     ->requiresConfirmation()
                     ->action(function (Ad $record) {
                         $record->update(['status' => 'active']);
-                        Notification::send(
-                            userId: $record->user_id,
-                            type:   'ad_approved',
-                            title:  'تم قبول إعلانك ✅',
-                            body:   "إعلانك \"{$record->title}\" أصبح نشطاً",
-                            data:   ['ad_id' => $record->id]
-                        );
+                        Notification::send([
+                            'user_id'      => $record->user_id,
+                            'type'         => 'ad_approved',
+                            'title'        => 'تم قبول إعلانك ✅',
+                            'body'         => "إعلانك \"{$record->title}\" أصبح نشطاً",
+                            'related_id'   => $record->id,
+                            'related_type' => Ad::class,
+                        ]);
                         Cache::forget("similar_ads_{$record->id}");
                         FilamentNotification::make()->title('تم القبول')->success()->send();
                     }),
@@ -145,13 +146,14 @@ class AdsTable
                             'status'           => 'rejected',
                             'rejection_reason' => $data['rejection_reason'],
                         ]);
-                        Notification::send(
-                            userId: $record->user_id,
-                            type:   'ad_rejected',
-                            title:  'تم رفض إعلانك',
-                            body:   $data['rejection_reason'],
-                            data:   ['ad_id' => $record->id]
-                        );
+                        Notification::send([
+                            'user_id'      => $record->user_id,
+                            'type'         => 'ad_rejected',
+                            'title'        => 'تم رفض إعلانك',
+                            'body'         => $data['rejection_reason'],
+                            'related_id'   => $record->id,
+                            'related_type' => Ad::class,
+                        ]);
                         FilamentNotification::make()->title('تم الرفض')->danger()->send();
                     }),
 
@@ -189,13 +191,14 @@ class AdsTable
                         ->action(function ($records) {
                             $records->each(function (Ad $record) {
                                 $record->update(['status' => 'active']);
-                                Notification::send(
-                                    userId: $record->user_id,
-                                    type:   'ad_approved',
-                                    title:  'تم قبول إعلانك ✅',
-                                    body:   "إعلانك \"{$record->title}\" أصبح نشطاً",
-                                    data:   ['ad_id' => $record->id]
-                                );
+                                Notification::send([
+                                    'user_id'      => $record->user_id,
+                                    'type'         => 'ad_approved',
+                                    'title'        => 'تم قبول إعلانك ✅',
+                                    'body'         => "إعلانك \"{$record->title}\" أصبح نشطاً",
+                                    'related_id'   => $record->id,
+                                    'related_type' => Ad::class,
+                                ]);
                             });
                             FilamentNotification::make()->title('تم قبول الإعلانات')->success()->send();
                         }),

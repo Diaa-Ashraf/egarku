@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Ad;
-use App\Repositories\Interfaces\HomeRepositoryInterface;
+use App\Interfaces\HomeRepositoryInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -32,10 +32,10 @@ class HomeRepository implements HomeRepositoryInterface
                 ->where('position', 'homepage_top')
                 ->where(function ($q) use ($cityId) {
                     $q->whereNull('city_id')
-                      ->orWhere('city_id', $cityId);
+                        ->orWhere('city_id', $cityId);
                 })
                 ->select(['id', 'image', 'link'])
-                ->orderBy('sort_order')
+                ->orderBy('created_at', 'desc')
                 ->get();
         });
     }
@@ -62,7 +62,7 @@ class HomeRepository implements HomeRepositoryInterface
                 ->join('cities', 'areas.city_id', '=', 'cities.id')
                 ->leftJoin('ad_images', function ($join) {
                     $join->on('ad_images.ad_id', '=', 'ads.id')
-                         ->where('ad_images.is_main', true);
+                        ->where('ad_images.is_main', true);
                 })
                 ->where('ads.status', 'active')
                 ->where('ads.is_featured', true)
@@ -95,7 +95,7 @@ class HomeRepository implements HomeRepositoryInterface
                 ->join('cities', 'areas.city_id', '=', 'cities.id')
                 ->leftJoin('ad_images', function ($join) {
                     $join->on('ad_images.ad_id', '=', 'ads.id')
-                         ->where('ad_images.is_main', true);
+                        ->where('ad_images.is_main', true);
                 })
                 ->where('ads.status', 'active')
                 ->whereNull('ads.deleted_at')

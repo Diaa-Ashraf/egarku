@@ -36,4 +36,24 @@ trait ApiResponse
     {
         return $this->error($message, 403);
     }
+
+    protected function paginated($data)
+    {
+        return response()->json([
+            'status' => true,
+            'data'   => $data->items(),
+            'meta'   => [
+                'current_page' => $data->currentPage(),
+                'per_page'     => $data->perPage(),
+                'total'        => $data->total(),
+                'last_page'    => $data->lastPage(),
+            ],
+            'links'  => [
+                'first' => $data->url(1),
+                'last'  => $data->url($data->lastPage()),
+                'prev'  => $data->previousPageUrl(),
+                'next'  => $data->nextPageUrl(),
+            ],
+        ]);
+    }
 }
