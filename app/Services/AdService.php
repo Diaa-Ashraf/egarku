@@ -293,9 +293,16 @@ class AdService implements AdServiceInterface
             ->select(['whatsapp', 'work_phone'])
             ->first();
 
+        // إذا ما كانش في work_phone، خد رقم الهاتف من اليوزر
+        $phone = $vendor?->work_phone;
+        if (!$phone) {
+            $user = DB::table('users')->where('id', $ad->user_id)->select('phone')->first();
+            $phone = $user?->phone;
+        }
+
         return [
             'whatsapp' => $vendor?->whatsapp,
-            'phone'    => $vendor?->work_phone,
+            'phone'    => $phone,
         ];
     }
 

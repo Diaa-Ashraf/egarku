@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    'paymob' => [
+        'api_key'        => env('PAYMOB_API_KEY'),
+        'integration_id' => env('PAYMOB_INTEGRATION_ID'),
+        'iframe_id'      => env('PAYMOB_IFRAME_ID'),
+        'hmac_secret'    => env('PAYMOB_HMAC_SECRET'),
+    ],
+
+    'fawry' => [
+        'merchant_code' => env('FAWRY_MERCHANT_CODE'),
+        'secure_key'    => env('FAWRY_SECURE_KEY'),
+        'base_url'      => env('FAWRY_BASE_URL', 'https://www.atfawry.com'),
+    ],
+
+    'payment' => [
+        'vodafone_number' => env('VODAFONE_CASH_NUMBER'),
+        'instapay_number' => env('INSTAPAY_NUMBER'),
+    ],
+
 ];
