@@ -25,7 +25,7 @@ class DashboardRepository implements DashboardRepositoryInterface
             ')
             ->first();
 
-        $usage = DB::table('vendor_usage')
+        $usage = DB::table('vendor_usages')
             ->where('vendor_profile_id', $vendorId)
             ->where('month', now()->month)
             ->where('year', now()->year)
@@ -47,16 +47,23 @@ class DashboardRepository implements DashboardRepositoryInterface
             ->join('categories', 'ads.category_id', '=', 'categories.id')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
-                     ->where('ad_images.is_main', true);
+                    ->where('ad_images.is_main', true);
             })
             ->where('ads.user_id', $userId)
             ->whereNull('ads.deleted_at')
             ->select([
-                'ads.id', 'ads.title', 'ads.price', 'ads.price_unit',
-                'ads.status', 'ads.rejection_reason',
-                'ads.is_featured', 'ads.featured_until',
-                'ads.views_count', 'ads.contacts_count',
-                'ads.expires_at', 'ads.created_at',
+                'ads.id',
+                'ads.title',
+                'ads.price',
+                'ads.price_unit',
+                'ads.status',
+                'ads.rejection_reason',
+                'ads.is_featured',
+                'ads.featured_until',
+                'ads.views_count',
+                'ads.contacts_count',
+                'ads.expires_at',
+                'ads.created_at',
                 'areas.name as area_name',
                 'cities.name as city_name',
                 'categories.name as category_name',
@@ -128,13 +135,16 @@ class DashboardRepository implements DashboardRepositoryInterface
         $adsPerformance = DB::table('ads')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
-                     ->where('ad_images.is_main', true);
+                    ->where('ad_images.is_main', true);
             })
             ->where('ads.user_id', $userId)
             ->whereNull('ads.deleted_at')
             ->select([
-                'ads.id', 'ads.title', 'ads.status',
-                'ads.views_count', 'ads.contacts_count',
+                'ads.id',
+                'ads.title',
+                'ads.status',
+                'ads.views_count',
+                'ads.contacts_count',
                 'ads.created_at',
                 'ad_images.path as main_image',
             ])
@@ -195,7 +205,7 @@ class DashboardRepository implements DashboardRepositoryInterface
         return DB::table('ads')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
-                     ->where('ad_images.is_main', true);
+                    ->where('ad_images.is_main', true);
             })
             ->join('areas', 'ads.area_id', '=', 'areas.id')
             ->join('cities', 'areas.city_id', '=', 'cities.id')
@@ -203,8 +213,12 @@ class DashboardRepository implements DashboardRepositoryInterface
             ->where('ads.status', 'active')
             ->whereNull('ads.deleted_at')
             ->select([
-                'ads.id', 'ads.title', 'ads.price', 'ads.price_unit',
-                'ads.views_count', 'ads.contacts_count',
+                'ads.id',
+                'ads.title',
+                'ads.price',
+                'ads.price_unit',
+                'ads.views_count',
+                'ads.contacts_count',
                 'areas.name as area_name',
                 'cities.name as city_name',
                 'ad_images.path as main_image',

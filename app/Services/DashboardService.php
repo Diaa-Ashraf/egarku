@@ -59,7 +59,7 @@ class DashboardService implements DashboardServiceInterface
 
         $subscription = $this->dashboardRepository->getSubscription($vendor->id);
 
-        $usage = DB::table('vendor_usage')
+        $usage = DB::table('vendor_usages')
             ->where('vendor_profile_id', $vendor->id)
             ->where('month', now()->month)
             ->where('year', now()->year)
@@ -93,7 +93,7 @@ class DashboardService implements DashboardServiceInterface
 
         return $this->dashboardRepository->getInteractions(
             vendorId: $vendor?->id ?? 0,
-            userId:   $userId
+            userId: $userId
         );
     }
 
