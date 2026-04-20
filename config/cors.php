@@ -1,4 +1,3 @@
-// config/cors.php
 <?php
 
 return [
