@@ -8,5 +8,5 @@ interface HomeRepositoryInterface
     public function getTopBanners(?int $cityId): object;
     public function getFeaturedPartners(): object;
     public function getFeaturedAds(): object;
-    public function getLatestAds(): object;
+    public function getAdsByMarketplace(): object; // تسوق حسب الفئة — 4 إعلانات من كل سوق
 }

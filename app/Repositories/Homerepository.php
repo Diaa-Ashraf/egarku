@@ -2,14 +2,13 @@
 
 namespace App\Repositories;
 
-use App\Models\Ad;
 use App\Interfaces\HomeRepositoryInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class HomeRepository implements HomeRepositoryInterface
 {
-    // الأسواق — Cache يوم كامل (بيانات ثابتة)
+    // الأسواق — Cache يوم كامل
     public function getMarketplaces(): object
     {
         return Cache::remember('marketplaces_all', now()->addDay(), function () {
@@ -21,6 +20,7 @@ class HomeRepository implements HomeRepositoryInterface
         });
     }
 
+    // البانرات العليا — Cache 30 دقيقة
     public function getTopBanners(?int $cityId): object
     {
         $key = "banners_homepage_top_{$cityId}";
@@ -32,7 +32,7 @@ class HomeRepository implements HomeRepositoryInterface
                 ->where('position', 'homepage_top')
                 ->where(function ($q) use ($cityId) {
                     $q->whereNull('city_id')
-                        ->orWhere('city_id', $cityId);
+                      ->orWhere('city_id', $cityId);
                 })
                 ->select(['id', 'image', 'link'])
                 ->orderBy('created_at', 'desc')
@@ -40,6 +40,7 @@ class HomeRepository implements HomeRepositoryInterface
         });
     }
 
+    // الشركاء المميزون — Cache 30 دقيقة
     public function getFeaturedPartners(): object
     {
         return Cache::remember('featured_partners_home', now()->addMinutes(30), function () {
@@ -52,8 +53,7 @@ class HomeRepository implements HomeRepositoryInterface
         });
     }
 
-    // الإعلانات المميزة
-    // JOIN بدل eager loading عشان الـ list كبير والـ select محدد
+    // الإعلانات المميزة — 12 إعلان
     public function getFeaturedAds(): object
     {
         return Cache::remember('home_featured_ads', now()->addMinutes(10), function () {
@@ -62,7 +62,7 @@ class HomeRepository implements HomeRepositoryInterface
                 ->join('cities', 'areas.city_id', '=', 'cities.id')
                 ->leftJoin('ad_images', function ($join) {
                     $join->on('ad_images.ad_id', '=', 'ads.id')
-                        ->where('ad_images.is_main', true);
+                         ->where('ad_images.is_main', true);
                 })
                 ->where('ads.status', 'active')
                 ->where('ads.is_featured', true)
@@ -80,24 +80,36 @@ class HomeRepository implements HomeRepositoryInterface
                     'ad_images.path as main_image',
                 ])
                 ->orderByDesc('ads.created_at')
-                ->limit(8)
+                ->limit(12) // ← 12 بدل 8
                 ->get();
         });
     }
 
-    // أحدث الإعلانات
-    // JOIN بدل eager loading
-    public function getLatestAds(): object
+    // تسوق حسب الفئة — 4 إعلانات من كل سوق نشط
+    // بنجيب الأسواق أولاً ثم لكل سوق 4 إعلانات في query واحدة
+    public function getAdsByMarketplace(): object
     {
-        return Cache::remember('home_latest_ads', now()->addMinutes(10), function () {
-            return DB::table('ads')
+        return Cache::remember('home_ads_by_marketplace', now()->addMinutes(10), function () {
+
+            // جيب الأسواق النشطة
+            $marketplaces = DB::table('marketplaces')
+                ->where('is_active', true)
+                ->select(['id', 'name', 'slug', 'icon'])
+                ->orderBy('sort_order')
+                ->get();
+
+            // جيب أحدث 4 إعلانات لكل سوق — JOIN في query واحدة
+            // بنستخدم ROW_NUMBER() عشان نحدد 4 لكل سوق
+            $ads = DB::table('ads')
                 ->join('areas', 'ads.area_id', '=', 'areas.id')
                 ->join('cities', 'areas.city_id', '=', 'cities.id')
+                ->join('marketplaces as m', 'ads.marketplace_id', '=', 'm.id')
                 ->leftJoin('ad_images', function ($join) {
                     $join->on('ad_images.ad_id', '=', 'ads.id')
-                        ->where('ad_images.is_main', true);
+                         ->where('ad_images.is_main', true);
                 })
                 ->where('ads.status', 'active')
+                ->where('m.is_active', true)
                 ->whereNull('ads.deleted_at')
                 ->select([
                     'ads.id',
@@ -107,14 +119,25 @@ class HomeRepository implements HomeRepositoryInterface
                     'ads.marketplace_id',
                     'ads.is_featured',
                     'ads.created_at',
+                    'm.name as marketplace_name',
+                    'm.slug as marketplace_slug',
                     'areas.name as area_name',
                     'cities.name as city_name',
                     'ad_images.path as main_image',
                 ])
                 ->orderByDesc('ads.is_featured')
                 ->orderByDesc('ads.created_at')
-                ->limit(12)
                 ->get();
+
+            // تجميع الإعلانات تحت كل سوق — 4 بس لكل سوق
+            $grouped = $ads->groupBy('marketplace_id');
+
+            return $marketplaces->map(function ($marketplace) use ($grouped) {
+                $marketplace->ads = $grouped->get($marketplace->id, collect())
+                    ->take(4)
+                    ->values();
+                return $marketplace;
+            })->filter(fn($marketplace) => $marketplace->ads->isNotEmpty())->values();
         });
     }
 }

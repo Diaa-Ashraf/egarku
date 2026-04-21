@@ -20,18 +20,16 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
         });
     }
 
-    // الكاتيجوريز — Cache يوم (بيانات شبه ثابتة)
+    // الكاتيجوريز — Cache يوم
     public function getCategories(int $marketplaceId): object
     {
         return Cache::remember("categories_marketplace_{$marketplaceId}", now()->addDay(), function () use ($marketplaceId) {
-            // جيب الـ parent categories مع الـ children بـ JOIN واحد
             $all = DB::table('categories')
                 ->where('marketplace_id', $marketplaceId)
                 ->select(['id', 'name', 'slug', 'icon', 'parent_id', 'sort_order'])
                 ->orderBy('sort_order')
                 ->get();
 
-            // تقسيم parents و children في PHP بدل N+1 queries
             $parents  = $all->whereNull('parent_id')->values();
             $children = $all->whereNotNull('parent_id')->groupBy('parent_id');
 
@@ -52,7 +50,6 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->orderBy('sort_order')
                 ->get()
                 ->map(function ($field) {
-                    // decode options JSON
                     $field->options = $field->options ? json_decode($field->options) : null;
                     return $field;
                 });
@@ -70,8 +67,86 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
         });
     }
 
-    // الإعلانات مع الفلاتر
-    // JOIN بدل eager loading للـ performance
+    // بانرات السوق — Cache 30 دقيقة
+    public function getBanners(int $marketplaceId, string $position): object
+    {
+        return Cache::remember("banners_{$position}_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId, $position) {
+            return DB::table('banners')
+                ->where('marketplace_id', $marketplaceId)
+                ->where('position', $position)
+                ->where('is_active', true)
+                ->where('expires_at', '>', now())
+                ->select(['id', 'image', 'link'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+        });
+    }
+
+    // بانر النص — أول بانر نشط في position = search_page
+    public function getMiddleBanner(int $marketplaceId): ?object
+    {
+        return Cache::remember("banner_middle_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId) {
+            return DB::table('banners')
+                ->where('marketplace_id', $marketplaceId)
+                ->where('position', 'search_page')
+                ->where('is_active', true)
+                ->where('expires_at', '>', now())
+                ->select(['id', 'image', 'link'])
+                ->orderBy('created_at', 'desc')
+                ->first();
+        });
+    }
+
+    // الشركاء المميزون الخاصين بالسوق — Cache 30 دقيقة
+    public function getFeaturedPartners(int $marketplaceId): object
+    {
+        return Cache::remember("featured_partners_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId) {
+            return DB::table('featured_partners')
+                ->where(function ($q) use ($marketplaceId) {
+                    $q->where('marketplace_id', $marketplaceId)
+                      ->orWhereNull('marketplace_id'); // الشركاء اللي بيظهروا في كل الأسواق
+                })
+                ->where('is_active', true)
+                ->where('expires_at', '>', now())
+                ->select(['id', 'name', 'logo', 'website', 'marketplace_id'])
+                ->orderBy('sort_order')
+                ->get();
+        });
+    }
+
+    // الإعلانات المميزة الخاصة بالسوق — 6 إعلانات
+    public function getFeaturedAds(int $marketplaceId): object
+    {
+        return Cache::remember("featured_ads_marketplace_{$marketplaceId}", now()->addMinutes(10), function () use ($marketplaceId) {
+            return DB::table('ads')
+                ->join('areas', 'ads.area_id', '=', 'areas.id')
+                ->join('cities', 'areas.city_id', '=', 'cities.id')
+                ->leftJoin('ad_images', function ($join) {
+                    $join->on('ad_images.ad_id', '=', 'ads.id')
+                         ->where('ad_images.is_main', true);
+                })
+                ->where('ads.marketplace_id', $marketplaceId)
+                ->where('ads.status', 'active')
+                ->where('ads.is_featured', true)
+                ->where('ads.featured_until', '>', now())
+                ->whereNull('ads.deleted_at')
+                ->select([
+                    'ads.id',
+                    'ads.title',
+                    'ads.price',
+                    'ads.price_unit',
+                    'ads.created_at',
+                    'areas.name as area_name',
+                    'cities.name as city_name',
+                    'ad_images.path as main_image',
+                ])
+                ->orderByDesc('ads.created_at')
+                ->limit(6)
+                ->get();
+        });
+    }
+
+    // الإعلانات مع الفلاتر — paginate 12
     public function getAds(int $marketplaceId, array $filters): object
     {
         $query = DB::table('ads')
@@ -79,7 +154,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
             ->join('cities', 'areas.city_id', '=', 'cities.id')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
-                    ->where('ad_images.is_main', true);
+                     ->where('ad_images.is_main', true);
             })
             ->where('ads.marketplace_id', $marketplaceId)
             ->where('ads.status', 'active')
@@ -127,9 +202,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
         // فلاتر الفيلدات الديناميكية: fields[rooms]=3&fields[furnished]=yes
         if (!empty($filters['fields']) && is_array($filters['fields'])) {
             foreach ($filters['fields'] as $key => $value) {
-
                 $query->whereExists(function ($q) use ($key, $value) {
-
                     $q->select(DB::raw(1))
                         ->from('ad_field_values')
                         ->join('marketplace_fields', 'marketplace_fields.id', '=', 'ad_field_values.field_id')
@@ -140,7 +213,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
             }
         }
 
-        // ── الترتيب: المميزة أولاً ثم الأحدث ──────────────
+        // ── الترتيب ──────────────────────────────────────────
         $sortBy = $filters['sort'] ?? 'latest';
 
         match ($sortBy) {
@@ -149,6 +222,6 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
             default      => $query->orderByDesc('ads.is_featured')->orderByDesc('ads.created_at'),
         };
 
-        return $query->paginate(20);
+        return $query->paginate(12); // ← 12 في الصفحة
     }
 }

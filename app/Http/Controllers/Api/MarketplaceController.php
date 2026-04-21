@@ -17,6 +17,7 @@ class MarketplaceController extends Controller
 
     // GET /api/marketplace/{slug}
     // بيانات السوق + كاتيجوريز + فيلدات + مميزات
+    // + بانرات + شركاء مميزون + إعلانات مميزة
     public function show(string $slug)
     {
         try {

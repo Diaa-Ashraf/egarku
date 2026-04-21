@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Interfaces\MarketplaceRepositoryInterface;
 use App\Interfaces\Services\MarketplaceServiceInterface;
-use App\Repositories\MarketplaceRepository;
 
 class MarketplaceService implements MarketplaceServiceInterface
 {
@@ -12,7 +11,7 @@ class MarketplaceService implements MarketplaceServiceInterface
         private MarketplaceRepositoryInterface $marketplaceRepository
     ) {}
 
-    // صفحة السوق — بيانات ثابتة (categories + fields + amenities)
+    // صفحة السوق — كل البيانات الثابتة + البانرات + المميزون + الإعلانات المميزة
     public function getMarketplacePage(string $slug): array
     {
         $marketplace = $this->marketplaceRepository->findBySlug($slug);
@@ -22,10 +21,14 @@ class MarketplaceService implements MarketplaceServiceInterface
         }
 
         return [
-            'marketplace' => $marketplace,
-            'categories'  => $this->marketplaceRepository->getCategories($marketplace->id),
-            'fields'      => $this->marketplaceRepository->getFields($marketplace->id),
-            'amenities'   => $this->marketplaceRepository->getAmenities($marketplace->id),
+            'marketplace'       => $marketplace,
+            'categories'        => $this->marketplaceRepository->getCategories($marketplace->id),
+            'fields'            => $this->marketplaceRepository->getFields($marketplace->id),
+            'amenities'         => $this->marketplaceRepository->getAmenities($marketplace->id),
+            'top_banners'       => $this->marketplaceRepository->getBanners($marketplace->id, 'homepage_top'),
+            'middle_banner'     => $this->marketplaceRepository->getMiddleBanner($marketplace->id),
+            'featured_partners' => $this->marketplaceRepository->getFeaturedPartners($marketplace->id),
+            'featured_ads'      => $this->marketplaceRepository->getFeaturedAds($marketplace->id),
         ];
     }
 
