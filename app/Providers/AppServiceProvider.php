@@ -85,10 +85,7 @@ class AppServiceProvider extends ServiceProvider
 
         );
 
-        $this->app->bind(
-            noti::class,
-            \App\Services\NotificationService::class
-        );
+       
     }
 
     /**
