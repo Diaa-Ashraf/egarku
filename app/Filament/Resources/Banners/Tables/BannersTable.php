@@ -22,7 +22,10 @@ class BannersTable
             ->columns([
                 ImageColumn::make('image')
                     ->label('الصورة')
-                    ->disk('public'),
+                    ->disk('public')
+                    ->getStateUsing(fn($record) => $record->image ? asset('storage/' . $record->image) : null)
+                    ->circular(),
+
 
                 // من الـ eager loading
                 TextColumn::make('marketplace.name')

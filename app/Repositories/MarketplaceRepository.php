@@ -75,7 +75,10 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->where('marketplace_id', $marketplaceId)
                 ->where('position', $position)
                 ->where('is_active', true)
-                ->where('expires_at', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })
                 ->select(['id', 'image', 'link'])
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -90,7 +93,10 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->where('marketplace_id', $marketplaceId)
                 ->where('position', 'search_page')
                 ->where('is_active', true)
-                ->where('expires_at', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })
                 ->select(['id', 'image', 'link'])
                 ->orderBy('created_at', 'desc')
                 ->first();
@@ -107,7 +113,10 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                       ->orWhereNull('marketplace_id'); // الشركاء اللي بيظهروا في كل الأسواق
                 })
                 ->where('is_active', true)
-                ->where('expires_at', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })
                 ->select(['id', 'name', 'logo', 'website', 'marketplace_id'])
                 ->orderBy('sort_order')
                 ->get();
@@ -128,7 +137,10 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->where('ads.marketplace_id', $marketplaceId)
                 ->where('ads.status', 'active')
                 ->where('ads.is_featured', true)
-                ->where('ads.featured_until', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('ads.featured_until')
+                      ->orWhere('ads.featured_until', '>', now());
+                })
                 ->whereNull('ads.deleted_at')
                 ->select([
                     'ads.id',

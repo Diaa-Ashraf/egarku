@@ -68,16 +68,23 @@ class UserService implements UserServiceInterface
     {
         $user = User::findOrFail($userId);
 
-        // حذف الصورة القديمة
-        if ($user->avatar) {
+        // حذف الصورة القديمة (لو موجودة)
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
             Storage::disk('public')->delete($user->avatar);
         }
 
+        // رفع الصورة الجديدة
         $path = $file->store('avatars', 'public');
-        $user->update(['avatar' => $path]);
 
+        // تحديث المستخدم
+        $user->update([
+            'avatar' => $path,
+        ]);
+
+        // مسح الكاش
         Cache::forget("vendor_profile_{$userId}");
-        return User::findOrFail($userId);
+
+        return $user->fresh();
     }
 
     // DELETE /api/user/account

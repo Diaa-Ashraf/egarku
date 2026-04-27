@@ -27,7 +27,7 @@ class VendorProfileResource extends Resource
     // Eager Loading
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['user', 'marketplace']);
+        return parent::getEloquentQuery()->with(['user', 'marketplace', 'activeFeaturedPartner']);
     }
 
     public static function form(Schema $schema): Schema

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\{
     UserController,
     DashboardController,
     PaymentController,
+    ServiceController,
     NotificationController,
     FeaturedAdsController,
 };
@@ -26,6 +27,7 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/subscribe', [PaymentController::class, 'subscribe']);
+    Route::post('/services/purchase', [ServiceController::class, 'purchase']);
 
     Route::get('/notifications',              [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
@@ -70,6 +72,7 @@ Route::get('/cities',                 [LocationController::class, 'cities']);
 Route::get('/cities/{cityId}/areas',  [LocationController::class, 'areas']);
 Route::get('/vendors/{id}',           [VendorController::class, 'show']);
 Route::get('/plans', [PaymentController::class, 'plans']);
+Route::get('/services/pricing', [ServiceController::class, 'pricing']);
 Route::post('/payment/paymob/callback', [PaymentController::class, 'paymobCallback']);
 Route::post('/payment/fawry/callback',  [PaymentController::class, 'fawryCallback']);
 Route::get('/featured-ads', [FeaturedAdsController::class, 'index']);

@@ -6,11 +6,17 @@ use App\Interfaces\PaymentRepositoryInterface;
 use App\Interfaces\PlanRepositoryInterface;
 use App\Interfaces\Services\PaymentServiceInterface;
 use App\Models\User;
+use App\Models\ServicePrice;
+use App\Models\Ad;
+use App\Models\Banner;
+use App\Models\FeaturedPartner;
+use App\Models\FeaturedPurchase;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 class PaymentService implements PaymentServiceInterface
 {
@@ -59,6 +65,136 @@ class PaymentService implements PaymentServiceInterface
         };
     }
 
+    // ── أسعار الخدمات الفردية ─────────────────────────────────
+    public function getServicePricing(): array
+    {
+        $prices = ServicePrice::where('is_active', true)
+            ->orderBy('service_type')
+            ->orderBy('duration_days')
+            ->get();
+
+        $labels = [
+            'feature_ad'      => 'تمييز إعلان',
+            'feature_company' => 'تمييز شركة',
+            'add_banner'      => 'إضافة بانر',
+        ];
+
+        $grouped = [];
+        foreach ($prices as $p) {
+            $grouped[$p->service_type][] = [
+                'id'            => $p->id,
+                'duration_days' => $p->duration_days,
+                'price'         => $p->price,
+            ];
+        }
+
+        $result = [];
+        foreach ($grouped as $type => $options) {
+            $result[] = [
+                'service_type' => $type,
+                'label'        => $labels[$type] ?? $type,
+                'options'      => $options,
+            ];
+        }
+
+        return $result;
+    }
+
+    // ── شراء خدمة فردية ───────────────────────────────────────
+    public function purchaseService(array $data, int $userId): array
+    {
+        $user   = User::find($userId);
+        $vendor = $user->vendorProfile;
+
+        if (!$vendor) {
+            throw new \Exception('ليس لديك ملف معلن', 403);
+        }
+
+        $servicePrice = ServicePrice::where('id', $data['service_price_id'])
+            ->where('is_active', true)
+            ->first();
+
+        if (!$servicePrice) {
+            throw new \Exception('خطة السعر غير متاحة', 404);
+        }
+
+        // تحقق من نوع الخدمة
+        if ($servicePrice->service_type !== $data['service_type']) {
+            throw new \Exception('نوع الخدمة لا يتطابق مع خطة السعر', 422);
+        }
+
+        $method  = $data['method'];
+        $extraData = [];
+
+        // ── تجهيز البيانات حسب نوع الخدمة ──
+        if ($data['service_type'] === 'feature_ad') {
+            $ad = Ad::where('id', $data['ad_id'])->where('user_id', $userId)->first();
+            if (!$ad) throw new \Exception('الإعلان غير موجود أو ليس ملكك', 404);
+            if ($ad->is_featured) throw new \Exception('الإعلان مميز بالفعل', 422);
+            $extraData['ad_id'] = $ad->id;
+        }
+
+        if ($data['service_type'] === 'add_banner') {
+            // رفع الصورة وحفظ البانر كغير مفعل (قيد المراجعة)
+            $imagePath = $data['image']->store('banners', 'public');
+            $banner = Banner::create([
+                'marketplace_id'    => $data['marketplace_id'] ?? null,
+                'vendor_profile_id' => $vendor->id,
+                'city_id'           => $data['city_id'] ?? null,
+                'image'             => $imagePath,
+                'link'              => $data['link'] ?? null,
+                'position'          => $data['position'],
+                'price'             => $servicePrice->price,
+                'starts_at'         => now(),
+                'expires_at'        => $servicePrice->duration_days > 0
+                    ? now()->addDays($servicePrice->duration_days)
+                    : null,
+                'is_active'         => false, // قيد المراجعة
+            ]);
+            $extraData['banner_id'] = $banner->id;
+        }
+
+        if ($data['service_type'] === 'feature_company') {
+            $extraData['featured_partner_id'] = null; // سيُنشأ بعد الدفع
+        }
+
+        $transactionType = match ($data['service_type']) {
+            'feature_ad'      => 'featured',
+            'feature_company' => 'featured_partner',
+            'add_banner'      => 'banner',
+        };
+
+        // إنشاء الـ Transaction
+        $transaction = $this->paymentRepository->createTransaction([
+            'vendor_profile_id'  => $vendor->id,
+            'ad_id'              => $extraData['ad_id'] ?? null,
+            'banner_id'          => $extraData['banner_id'] ?? null,
+            'featured_partner_id' => $extraData['featured_partner_id'] ?? null,
+            'amount'             => $servicePrice->price,
+            'type'               => $transactionType,
+            'method'             => $method,
+            'status'             => 'pending',
+            'notes'              => json_encode(['duration_days' => $servicePrice->duration_days]),
+        ]);
+
+        // ← نمرر الـ $servicePrice بدل الـ $plan عشان الـ name والـ price
+        $fakePlan = (object) [
+            'id'    => $servicePrice->id,
+            'name'  => match ($data['service_type']) {
+                'feature_ad'      => 'تمييز إعلان',
+                'feature_company' => 'تمييز شركة',
+                'add_banner'      => 'إضافة بانر',
+            },
+            'price' => $servicePrice->price,
+        ];
+
+        return match ($method) {
+            'paymob'   => $this->handlePaymob($transaction, $fakePlan, $user),
+            'fawry'    => $this->handleFawry($transaction, $fakePlan, $user),
+            default    => $this->handleManual($transaction, $fakePlan),
+        };
+    }
+
     // ── Paymob ───────────────────────────────────────────────
     private function handlePaymob(object $transaction, object $plan, User $user): array
     {
@@ -72,13 +208,13 @@ class PaymentService implements PaymentServiceInterface
             // Step 2: Order registration
             $orderResponse = Http::post('https://accept.paymob.com/api/ecommerce/orders', [
                 'auth_token'     => $authToken,
-                'delivery_needed'=> false,
+                'delivery_needed' => false,
                 'amount_cents'   => $plan->price * 100,
                 'currency'       => 'EGP',
                 'merchant_order_id' => $transaction->id,
                 'items'          => [[
                     'name'        => $plan->name,
-                    'amount_cents'=> $plan->price * 100,
+                    'amount_cents' => $plan->price * 100,
                     'description' => "باقة {$plan->name}",
                     'quantity'    => 1,
                 ]],
@@ -121,7 +257,6 @@ class PaymentService implements PaymentServiceInterface
                 'payment_url' => "https://accept.paymob.com/api/acceptance/iframes/" . config('services.paymob.iframe_id') . "?payment_token={$paymentKey}",
                 'transaction_id' => $transaction->id,
             ];
-
         } catch (\Exception $e) {
             Log::error('Paymob error: ' . $e->getMessage());
             $this->paymentRepository->updateTransaction($transaction->id, ['status' => 'failed']);
@@ -138,13 +273,14 @@ class PaymentService implements PaymentServiceInterface
             $refNumber    = 'EJK-' . $transaction->id . '-' . time();
 
             // توليد الـ signature
-            $signature = hash('sha256',
+            $signature = hash(
+                'sha256',
                 $merchantCode .
-                $refNumber .
-                $user->phone .
-                $transaction->id .
-                number_format($plan->price, 2, '.', '') .
-                $secureKey
+                    $refNumber .
+                    $user->phone .
+                    $transaction->id .
+                    number_format($plan->price, 2, '.', '') .
+                    $secureKey
             );
 
             $response = Http::post(config('services.fawry.base_url') . '/ECommerceWeb/Fawry/payments/charge', [
@@ -179,7 +315,6 @@ class PaymentService implements PaymentServiceInterface
                 'transaction_id'   => $transaction->id,
                 'message'          => 'ادفع في أي فرع فوري برقم المرجع',
             ];
-
         } catch (\Exception $e) {
             Log::error('Fawry error: ' . $e->getMessage());
             $this->paymentRepository->updateTransaction($transaction->id, ['status' => 'failed']);
@@ -195,7 +330,7 @@ class PaymentService implements PaymentServiceInterface
             'transaction_id' => $transaction->id,
             'amount'         => $plan->price,
             'message'        => 'سيتم تفعيل باقتك بعد تأكيد الدفع من الأدمن',
-            'payment_details'=> [
+            'payment_details' => [
                 'vodafone_cash' => config('services.payment.vodafone_number'),
                 'instapay'      => config('services.payment.instapay_number'),
             ],
@@ -210,11 +345,26 @@ class PaymentService implements PaymentServiceInterface
         $secretKey  = config('services.paymob.hmac_secret');
 
         $fields = [
-            'amount_cents', 'created_at', 'currency', 'error_occured',
-            'has_parent_transaction', 'id', 'integration_id', 'is_3d_secure',
-            'is_auth', 'is_capture', 'is_refunded', 'is_standalone_payment',
-            'is_voided', 'order.id', 'owner', 'pending', 'source_data.pan',
-            'source_data.sub_type', 'source_data.type', 'success',
+            'amount_cents',
+            'created_at',
+            'currency',
+            'error_occured',
+            'has_parent_transaction',
+            'id',
+            'integration_id',
+            'is_3d_secure',
+            'is_auth',
+            'is_capture',
+            'is_refunded',
+            'is_standalone_payment',
+            'is_voided',
+            'order.id',
+            'owner',
+            'pending',
+            'source_data.pan',
+            'source_data.sub_type',
+            'source_data.type',
+            'success',
         ];
 
         $concatenated = '';
@@ -241,7 +391,7 @@ class PaymentService implements PaymentServiceInterface
 
         if (!$transaction || $transaction->status === 'completed') return;
 
-        $this->activateSubscription($transaction);
+        $this->activateTransaction($transaction);
     }
 
     // ── Fawry Callback (POST /api/payment/fawry/callback) ────
@@ -254,7 +404,7 @@ class PaymentService implements PaymentServiceInterface
         if (!$transaction || $transaction->status === 'completed') return;
         if ($status !== 'PAID') return;
 
-        $this->activateSubscription($transaction);
+        $this->activateTransaction($transaction);
     }
 
     // ── تأكيد يدوي من الأدمن ─────────────────────────────────
@@ -266,11 +416,11 @@ class PaymentService implements PaymentServiceInterface
             throw new \Exception('العملية غير موجودة أو مكتملة مسبقاً');
         }
 
-        $this->activateSubscription($transaction);
+        $this->activateTransaction($transaction);
     }
 
-    // ── تفعيل الباقة — مشترك بين كل وسائل الدفع ─────────────
-    private function activateSubscription(object $transaction): void
+    // ── تفعيل العملية — مشترك بين كل وسائل الدفع ─────────────
+    private function activateTransaction(object $transaction): void
     {
         DB::transaction(function () use ($transaction) {
             // تحديث الـ transaction
@@ -279,33 +429,44 @@ class PaymentService implements PaymentServiceInterface
                 'updated_at' => now(),
             ]);
 
-            $plan = $this->planRepository->findById($transaction->plan_id);
-
-            // إلغاء الاشتراكات القديمة
-            $this->paymentRepository->cancelActiveSubscriptions($transaction->vendor_profile_id);
-
-            // إنشاء اشتراك جديد
-            $this->paymentRepository->createSubscription([
-                'vendor_profile_id' => $transaction->vendor_profile_id,
-                'plan_id'           => $transaction->plan_id,
-                'starts_at'         => now(),
-                'expires_at'        => now()->addDays($plan->duration_days),
-                'status'            => 'active',
-            ]);
-
-            // notification للمعلن
             $vendor = DB::table('vendor_profiles')
                 ->where('id', $transaction->vendor_profile_id)
-                ->select(['user_id'])
+                ->select(['user_id', 'display_name', 'marketplace_id'])
                 ->first();
 
+            // ── التوزيع حسب نوع العملية ──
+            match ($transaction->type) {
+                'subscription'    => $this->handleSubscriptionActivation($transaction),
+                'feature_ad'      => $this->handleFeatureAdActivation($transaction),
+                'feature_company' => $this->handleFeatureCompanyActivation($transaction, $vendor),
+                'add_banner'      => $this->handleBannerActivation($transaction, $vendor),
+                default           => null,
+            };
+
+            // إشعار المعلن
             if ($vendor) {
-                Notification::create([
+                $title = match ($transaction->type) {
+                    'subscription'    => 'تم تفعيل باقتك ✅',
+                    'feature_ad'      => 'تم تمييز إعلانك ⭐',
+                    'feature_company' => 'تم تمييز شركتك ⭐',
+                    'add_banner'      => 'تم استلام طلب البانر 📢',
+                    default           => 'تم معالجة الدفع ✅',
+                };
+
+                $body = match ($transaction->type) {
+                    'subscription'    => 'تم تفعيل باقتك بنجاح',
+                    'feature_ad'      => 'إعلانك أصبح مميزاً الآن',
+                    'feature_company' => 'شركتك مميزة الآن وستظهر للمستخدمين',
+                    'add_banner'      => 'تم استلام بانرك وهو قيد المراجعة من الإدارة',
+                    default           => 'تم معالجة الدفع بنجاح',
+                };
+
+                UserNotification::create([
                     'user_id' => $vendor->user_id,
                     'type'    => 'payment_confirmed',
-                    'title'   => 'تم تفعيل باقتك ✅',
-                    'body'    => "تم تفعيل باقة {$plan->name} بنجاح",
-                    'data'    => json_encode(['plan_id' => $plan->id]),
+                    'title'   => $title,
+                    'body'    => $body,
+                    'data'    => json_encode(['transaction_id' => $transaction->id, 'type' => $transaction->type]),
                 ]);
             }
 
@@ -313,5 +474,84 @@ class PaymentService implements PaymentServiceInterface
             Cache::forget("dashboard_stats_{$vendor?->user_id}");
             Cache::forget("vendor_profile_{$vendor?->user_id}");
         });
+    }
+
+    // ── تفعيل الباقة ─────────────────────────────────────────
+    private function handleSubscriptionActivation(object $transaction): void
+    {
+        $plan = $this->planRepository->findById($transaction->plan_id);
+
+        $this->paymentRepository->cancelActiveSubscriptions($transaction->vendor_profile_id);
+
+        $this->paymentRepository->createSubscription([
+            'vendor_profile_id' => $transaction->vendor_profile_id,
+            'plan_id'           => $transaction->plan_id,
+            'starts_at'         => now(),
+            'expires_at'        => now()->addDays($plan->duration_days),
+            'status'            => 'active',
+        ]);
+    }
+
+    // ── تمييز إعلان ──────────────────────────────────────────
+    private function handleFeatureAdActivation(object $transaction): void
+    {
+        $notes = json_decode($transaction->notes, true);
+        $durationDays = $notes['duration_days'] ?? 7;
+
+        $ad = Ad::find($transaction->ad_id);
+        if ($ad) {
+            $ad->update([
+                'is_featured'    => true,
+                'featured_until' => $durationDays > 0 ? now()->addDays($durationDays) : null,
+            ]);
+
+            FeaturedPurchase::create([
+                'ad_id'             => $ad->id,
+                'vendor_profile_id' => $transaction->vendor_profile_id,
+                'price'             => $transaction->amount,
+                'duration'          => $durationDays,
+                'starts_at'         => now(),
+                'expires_at'        => $durationDays > 0 ? now()->addDays($durationDays) : null,
+            ]);
+        }
+    }
+
+    // ── تمييز شركة ───────────────────────────────────────────
+    private function handleFeatureCompanyActivation(object $transaction, ?object $vendor): void
+    {
+        $notes = json_decode($transaction->notes, true);
+        $durationDays = $notes['duration_days'] ?? 7;
+
+        $fp = FeaturedPartner::updateOrCreate(
+            ['vendor_profile_id' => $transaction->vendor_profile_id],
+            [
+                'marketplace_id' => $vendor->marketplace_id ?? null,
+                'name'           => $vendor->display_name ?: 'شركة',
+                'logo'           => 'default_partner.png',
+                'website'        => null,
+                'price'          => $transaction->amount,
+                'is_active'      => true,
+                'starts_at'      => now(),
+                'expires_at'     => $durationDays > 0 ? now()->addDays($durationDays) : null,
+            ]
+        );
+
+        // ربط الـ transaction بالـ featured_partner
+        $this->paymentRepository->updateTransaction($transaction->id, [
+            'featured_partner_id' => $fp->id,
+        ]);
+    }
+
+    // ── تفعيل البانر (قيد المراجعة) ──────────────────────────
+    private function handleBannerActivation(object $transaction, ?object $vendor): void
+    {
+        // البانر محفوظ بالفعل وغير مفعل — نبقيه كذلك لحد ما الأدمن يوافق
+        // بس نحدث الـ notes إن الدفع تم
+        $this->paymentRepository->updateTransaction($transaction->id, [
+            'notes' => json_encode(array_merge(
+                json_decode($transaction->notes, true) ?? [],
+                ['payment_confirmed' => true, 'awaiting_review' => true]
+            )),
+        ]);
     }
 }

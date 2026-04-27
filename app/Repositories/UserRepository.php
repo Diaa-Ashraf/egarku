@@ -22,4 +22,6 @@ class UserRepository implements UserRepositoryInterface
     {
         return User::findOrFail($id)->delete(); // softDelete
     }
+
+    
 }

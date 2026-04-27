@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class VendorProfile extends Model
 {
-     protected $fillable = [
+    protected $fillable = [
         'user_id',
         'marketplace_id',    // ✅ بدل enum - علاقة بالـ marketplace
         'vendor_type',       // ✅ individual / company  بدل الـ enum القديم
@@ -25,33 +25,86 @@ class VendorProfile extends Model
     ];
 
     protected $casts = ['is_verified' => 'boolean'];
+    protected $appends = ['logo_url', 'verification_doc_url'];
 
     // ── Relations ────────────────────────────────────────────
-    public function user()             { return $this->belongsTo(User::class); }
-    public function marketplace()      { return $this->belongsTo(Marketplace::class); } // ✅ جديد
-    public function ads()              { return $this->hasMany(Ad::class); }
-    public function subscriptions()    { return $this->hasMany(VendorSubscription::class); }
-    public function reviews()          { return $this->hasMany(Review::class); }
-    public function featuredPartners() { return $this->hasMany(FeaturedPartner::class); } // ✅ جديد
-    public function banners()          { return $this->hasMany(Banner::class); }
-    public function transactions()     { return $this->hasMany(Transaction::class); }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    public function marketplace()
+    {
+        return $this->belongsTo(Marketplace::class);
+    } // ✅ جديد
+    public function ads()
+    {
+        return $this->hasMany(Ad::class);
+    }
+    public function subscriptions()
+    {
+        return $this->hasMany(VendorSubscription::class);
+    }
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+    public function featuredPartners()
+    {
+        return $this->hasMany(FeaturedPartner::class);
+    } // ✅ جديد
+    public function banners()
+    {
+        return $this->hasMany(Banner::class);
+    }
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function activeFeaturedPartner()
+    {
+        return $this->hasOne(FeaturedPartner::class)
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            });
+    }
 
     public function activeSubscription()
     {
         return $this->hasOne(VendorSubscription::class)
-                    ->where('status', 'active')
-                    ->where('expires_at', '>', now());
+            ->where('status', 'active')
+            ->where('expires_at', '>', now());
     }
 
     public function currentUsage()
     {
         return $this->hasOne(VendorUsage::class)
-                    ->where('month', now()->month)
-                    ->where('year', now()->year);
+            ->where('month', now()->month)
+            ->where('year', now()->year);
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (!$this->logo) {
+            return null;
+        }
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->logo);
+    }
+
+    public function getVerificationDocUrlAttribute(): ?string
+    {
+        if (!$this->verification_doc) {
+            return null;
+        }
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->verification_doc);
     }
 
     // ── Helpers ───────────────────────────────────────────────
-    public function isCompany(): bool { return $this->vendor_type === 'company'; }
+    public function isCompany(): bool
+    {
+        return $this->vendor_type === 'company';
+    }
 
     public function canPostAd(): bool
     {
@@ -68,7 +121,12 @@ class VendorProfile extends Model
     }
 
     // ── Scopes ────────────────────────────────────────────────
-    public function scopeVerified($q)               { return $q->where('is_verified', true); }
-    public function scopeInMarketplace($q, int $id) { return $q->where('marketplace_id', $id); }
-
+    public function scopeVerified($q)
+    {
+        return $q->where('is_verified', true);
+    }
+    public function scopeInMarketplace($q, int $id)
+    {
+        return $q->where('marketplace_id', $id);
+    }
 }

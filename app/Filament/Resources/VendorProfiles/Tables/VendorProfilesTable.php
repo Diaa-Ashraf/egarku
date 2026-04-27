@@ -47,6 +47,11 @@ class VendorProfilesTable
 
                 IconColumn::make('is_verified')->label('موثق')->boolean(),
 
+                IconColumn::make('is_featured')
+                    ->label('مميز')
+                    ->boolean()
+                    ->state(fn (VendorProfile $record) => $record->activeFeaturedPartner !== null),
+
                 TextColumn::make('avg_rating')
                     ->label('التقييم')
                     ->formatStateUsing(fn($state) => "⭐ {$state}")
@@ -123,6 +128,50 @@ class VendorProfilesTable
                             ->title('تم الرفض')
                             ->danger()
                             ->send();
+                    }),
+
+                // ⭐ تمييز
+                Action::make('feature')
+                    ->label('تمييز')
+                    ->icon('heroicon-o-star')
+                    ->color('warning')
+                    ->visible(fn(VendorProfile $r) => $r->vendor_type === 'company' && $r->verification_status === 'approved' && !$r->activeFeaturedPartner)
+                    ->form([
+                        \Filament\Forms\Components\Select::make('duration')
+                            ->label('المدة')
+                            ->options([7 => '7 أيام', 15 => '15 يوم', 30 => '30 يوم', 0 => 'دائم'])
+                            ->default(30)
+                            ->required(),
+                    ])
+                    ->action(function (VendorProfile $record, array $data) {
+                        \App\Models\FeaturedPartner::updateOrCreate(
+                            ['vendor_profile_id' => $record->id],
+                            [
+                                'marketplace_id' => $record->marketplace_id,
+                                'name'           => $record->display_name ?: 'شركة بدون اسم',
+                                'logo'           => $record->user->avatar ?? 'default_partner.png',
+                                'website'        => $record->website,
+                                'price'          => 0,
+                                'is_active'      => true,
+                                'starts_at'      => now(),
+                                'expires_at'     => $data['duration'] > 0 ? now()->addDays($data['duration']) : null,
+                            ]
+                        );
+                        FilamentNotification::make()->title('تم تمييز الشركة بنجاح')->warning()->send();
+                    }),
+
+                // ⛔ إلغاء التمييز
+                Action::make('unfeature')
+                    ->label('إلغاء التمييز')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn(VendorProfile $r) => $r->vendor_type === 'company' && $r->activeFeaturedPartner !== null)
+                    ->action(function (VendorProfile $record) {
+                        if ($record->activeFeaturedPartner) {
+                            $record->activeFeaturedPartner->update(['is_active' => false]);
+                        }
+                        FilamentNotification::make()->title('تم إلغاء تمييز الشركة')->success()->send();
                     }),
 
                 EditAction::make(),

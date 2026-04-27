@@ -35,7 +35,10 @@ class FeaturedAdsController extends Controller
                 })
                 ->where('ads.status',     'active')
                 ->where('ads.is_featured', true)
-                ->where('ads.featured_until', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('ads.featured_until')
+                      ->orWhere('ads.featured_until', '>', now());
+                })
                 ->whereNull('ads.deleted_at')
                 ->select([
                     'ads.id',

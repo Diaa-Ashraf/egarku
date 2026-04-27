@@ -19,11 +19,12 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+
             ->defaultSort('created_at', 'desc')
             ->columns([
                 ImageColumn::make('avatar')
                     ->label('الصورة')
-                    ->disk('public')
+                    ->getStateUsing(fn($record) => $record->avatar ? asset('storage/' . $record->avatar) : null)
                     ->circular(),
 
                 TextColumn::make('name')

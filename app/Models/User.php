@@ -42,6 +42,8 @@ class User extends Authenticatable
         ];
     }
 
+    protected $appends = ['avatar_url'];
+
     // ── Relations ────────────────────────────────────────────
 
     public function vendorProfile()
@@ -75,6 +77,16 @@ class User extends Authenticatable
     }
 
     // ── Helpers ───────────────────────────────────────────────
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+        // المسار مخزن كاملاً مع storage/، يحول للـ URL
+        $path = str_replace('storage/', '', $this->avatar);
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+    }
 
     public function isVendor(): bool
     {

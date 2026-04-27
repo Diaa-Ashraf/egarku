@@ -28,7 +28,10 @@ class HomeRepository implements HomeRepositoryInterface
         return Cache::remember($key, now()->addMinutes(30), function () use ($cityId) {
             return DB::table('banners')
                 ->where('is_active', true)
-                ->where('expires_at', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })
                 ->where('position', 'homepage_top')
                 ->where(function ($q) use ($cityId) {
                     $q->whereNull('city_id')
@@ -46,7 +49,10 @@ class HomeRepository implements HomeRepositoryInterface
         return Cache::remember('featured_partners_home', now()->addMinutes(30), function () {
             return DB::table('featured_partners')
                 ->where('is_active', true)
-                ->where('expires_at', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })
                 ->select(['id', 'name', 'logo', 'website', 'marketplace_id'])
                 ->orderBy('sort_order')
                 ->get();
@@ -66,7 +72,10 @@ class HomeRepository implements HomeRepositoryInterface
                 })
                 ->where('ads.status', 'active')
                 ->where('ads.is_featured', true)
-                ->where('ads.featured_until', '>', now())
+                ->where(function ($q) {
+                    $q->whereNull('ads.featured_until')
+                      ->orWhere('ads.featured_until', '>', now());
+                })
                 ->whereNull('ads.deleted_at')
                 ->select([
                     'ads.id',
