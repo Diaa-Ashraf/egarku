@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\StorageUrlHelper;
 use App\Interfaces\AdRepositoryInterface;
 use App\Interfaces\Services\AdServiceInterface;
 use App\Models\Ad;
@@ -299,7 +300,7 @@ class AdService implements AdServiceInterface
     // الإعلانات المحفوظة — JOIN بدل eager loading
     public function getSaved(int $userId): object
     {
-        return DB::table('saved_ads')
+        $result = DB::table('saved_ads')
             ->join('ads', 'saved_ads.ad_id', '=', 'ads.id')
             ->join('areas', 'ads.area_id', '=', 'areas.id')
             ->join('cities', 'areas.city_id', '=', 'cities.id')
@@ -324,5 +325,13 @@ class AdService implements AdServiceInterface
             ])
             ->orderByDesc('saved_ads.created_at')
             ->paginate(20);
+
+        // تحويل صور الإعلانات
+        collect($result->items())->transform(function ($item) {
+            $item->main_image = StorageUrlHelper::url($item->main_image);
+            return $item;
+        });
+
+        return $result;
     }
 }

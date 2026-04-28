@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Helpers\StorageUrlHelper;
 use App\Interfaces\VendorRepositoryInterface;
 use App\Models\VendorProfile;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +45,7 @@ class VendorRepository implements VendorRepositoryInterface
     // إعلانات المعلن — JOIN للـ performance
     public function getAds(int $vendorId): object
     {
-        return DB::table('ads')
+        $result = DB::table('ads')
             ->join('areas', 'ads.area_id', '=', 'areas.id')
             ->join('cities', 'areas.city_id', '=', 'cities.id')
             ->leftJoin('ad_images', function ($join) {
@@ -64,6 +65,14 @@ class VendorRepository implements VendorRepositoryInterface
             ->orderByDesc('ads.is_featured')
             ->orderByDesc('ads.created_at')
             ->paginate(12);
+
+        // تحويل صور الإعلانات
+        collect($result->items())->transform(function ($item) {
+            $item->main_image = StorageUrlHelper::url($item->main_image);
+            return $item;
+        });
+
+        return $result;
     }
 
     // تقييمات المعلن — eager loading عشان محتاجين بيانات المقيّم

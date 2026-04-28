@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Helpers\StorageUrlHelper;
 use App\Interfaces\DashboardRepositoryInterface;
 use App\Models\VendorSubscription;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,7 @@ class DashboardRepository implements DashboardRepositoryInterface
     // إعلاناتي — JOIN بدل eager loading
     public function getMyAds(int $userId): object
     {
-        return DB::table('ads')
+        $result = DB::table('ads')
             ->join('areas', 'ads.area_id', '=', 'areas.id')
             ->join('cities', 'areas.city_id', '=', 'cities.id')
             ->join('categories', 'ads.category_id', '=', 'categories.id')
@@ -71,6 +72,14 @@ class DashboardRepository implements DashboardRepositoryInterface
             ])
             ->orderByDesc('ads.created_at')
             ->paginate(15);
+
+        // تحويل صور الإعلانات
+        collect($result->items())->transform(function ($item) {
+            $item->main_image = StorageUrlHelper::url($item->main_image);
+            return $item;
+        });
+
+        return $result;
     }
 
     // باقتي الحالية
@@ -110,7 +119,7 @@ class DashboardRepository implements DashboardRepositoryInterface
     // عشان الإعلانات ممكن تكون بدون vendor_profile_id
     public function getInteractions(int $vendorId, int $userId): object
     {
-        return DB::table('contact_logs')
+        $result = DB::table('contact_logs')
             ->join('ads', 'contact_logs.ad_id', '=', 'ads.id')
             ->leftJoin('users', 'contact_logs.user_id', '=', 'users.id')
             ->where('ads.user_id', $userId)          // ← التغيير هنا
@@ -126,6 +135,14 @@ class DashboardRepository implements DashboardRepositoryInterface
             ])
             ->orderByDesc('contact_logs.created_at')
             ->paginate(20);
+
+        // تحويل صور الأفاتار
+        collect($result->items())->transform(function ($item) {
+            $item->user_avatar = StorageUrlHelper::url($item->user_avatar);
+            return $item;
+        });
+
+        return $result;
     }
 
     // الإحصائيات التفصيلية لكل إعلان
@@ -151,6 +168,8 @@ class DashboardRepository implements DashboardRepositoryInterface
             ->orderByDesc('ads.views_count')
             ->limit(10)
             ->get();
+
+        StorageUrlHelper::transformCollection($adsPerformance, 'main_image');
 
         // التواصل حسب النوع
         $contactsByType = DB::table('contact_logs')
@@ -180,7 +199,7 @@ class DashboardRepository implements DashboardRepositoryInterface
     // تقييماتي
     public function getMyReviews(int $vendorId): object
     {
-        return DB::table('reviews')
+        $result = DB::table('reviews')
             ->join('users', 'reviews.reviewer_id', '=', 'users.id')
             ->leftJoin('ads', 'reviews.ad_id', '=', 'ads.id')
             ->where('reviews.vendor_profile_id', $vendorId)
@@ -197,12 +216,20 @@ class DashboardRepository implements DashboardRepositoryInterface
             ])
             ->orderByDesc('reviews.created_at')
             ->paginate(15);
+
+        // تحويل صور الأفاتار
+        collect($result->items())->transform(function ($item) {
+            $item->reviewer_avatar = StorageUrlHelper::url($item->reviewer_avatar);
+            return $item;
+        });
+
+        return $result;
     }
 
     // الإعلان الأكثر مشاهدة
     public function getMostViewedAd(int $userId): ?object
     {
-        return DB::table('ads')
+        $result = DB::table('ads')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
                     ->where('ad_images.is_main', true);
@@ -225,6 +252,11 @@ class DashboardRepository implements DashboardRepositoryInterface
             ])
             ->orderByDesc('ads.views_count')
             ->first();
+
+        if ($result) {
+            StorageUrlHelper::transformField($result, 'main_image');
+        }
+        return $result;
     }
 
     // أحدث الأنشطة (notifications + contact_logs)

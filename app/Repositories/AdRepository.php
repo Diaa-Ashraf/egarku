@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class AdRepository implements AdRepositoryInterface
 {
-    // تفاصيل إعلان كامل — eager loading عشان البيانات معقدة
     public function findById(int $id): ?object
     {
         return Ad::where('id', $id)

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Helpers\StorageUrlHelper;
 use App\Interfaces\HomeRepositoryInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -12,11 +13,14 @@ class HomeRepository implements HomeRepositoryInterface
     public function getMarketplaces(): object
     {
         return Cache::remember('marketplaces_all', now()->addDay(), function () {
-            return DB::table('marketplaces')
+            $marketplaces = DB::table('marketplaces')
                 ->where('is_active', true)
                 ->select(['id', 'name', 'slug', 'icon'])
                 ->orderBy('sort_order')
                 ->get();
+
+            StorageUrlHelper::transformCollection($marketplaces, 'icon');
+            return $marketplaces;
         });
     }
 
@@ -26,7 +30,7 @@ class HomeRepository implements HomeRepositoryInterface
         $key = "banners_homepage_top_{$cityId}";
 
         return Cache::remember($key, now()->addMinutes(30), function () use ($cityId) {
-            return DB::table('banners')
+            $banners = DB::table('banners')
                 ->where('is_active', true)
                 ->where(function ($q) {
                     $q->whereNull('expires_at')
@@ -40,14 +44,16 @@ class HomeRepository implements HomeRepositoryInterface
                 ->select(['id', 'image', 'link'])
                 ->orderBy('created_at', 'desc')
                 ->get();
+
+            StorageUrlHelper::transformCollection($banners, 'image');
+            return $banners;
         });
     }
 
-    // الشركاء المميزون — Cache 30 دقيقة
     public function getFeaturedPartners(): object
     {
         return Cache::remember('featured_partners_home', now()->addMinutes(30), function () {
-            return DB::table('featured_partners')
+            $partners = DB::table('featured_partners')
                 ->where('is_active', true)
                 ->where(function ($q) {
                     $q->whereNull('expires_at')
@@ -56,6 +62,9 @@ class HomeRepository implements HomeRepositoryInterface
                 ->select(['id', 'name', 'logo', 'website', 'marketplace_id'])
                 ->orderBy('sort_order')
                 ->get();
+
+            StorageUrlHelper::transformCollection($partners, 'logo');
+            return $partners;
         });
     }
 
@@ -63,7 +72,7 @@ class HomeRepository implements HomeRepositoryInterface
     public function getFeaturedAds(): object
     {
         return Cache::remember('home_featured_ads', now()->addMinutes(10), function () {
-            return DB::table('ads')
+            $ads = DB::table('ads')
                 ->join('areas', 'ads.area_id', '=', 'areas.id')
                 ->join('cities', 'areas.city_id', '=', 'cities.id')
                 ->leftJoin('ad_images', function ($join) {
@@ -91,6 +100,9 @@ class HomeRepository implements HomeRepositoryInterface
                 ->orderByDesc('ads.created_at')
                 ->limit(12) // ← 12 بدل 8
                 ->get();
+
+            StorageUrlHelper::transformCollection($ads, 'main_image');
+            return $ads;
         });
     }
 
@@ -106,6 +118,9 @@ class HomeRepository implements HomeRepositoryInterface
                 ->select(['id', 'name', 'slug', 'icon'])
                 ->orderBy('sort_order')
                 ->get();
+
+            // تحويل أيقونات الأسواق
+            StorageUrlHelper::transformCollection($marketplaces, 'icon');
 
             // جيب أحدث 4 إعلانات لكل سوق — JOIN في query واحدة
             // بنستخدم ROW_NUMBER() عشان نحدد 4 لكل سوق
@@ -137,6 +152,9 @@ class HomeRepository implements HomeRepositoryInterface
                 ->orderByDesc('ads.is_featured')
                 ->orderByDesc('ads.created_at')
                 ->get();
+
+            // تحويل صور الإعلانات
+            StorageUrlHelper::transformCollection($ads, 'main_image');
 
             // تجميع الإعلانات تحت كل سوق — 4 بس لكل سوق
             $grouped = $ads->groupBy('marketplace_id');

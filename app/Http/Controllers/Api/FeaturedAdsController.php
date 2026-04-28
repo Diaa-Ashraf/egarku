@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\StorageUrlHelper;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -79,6 +80,12 @@ class FeaturedAdsController extends Controller
             };
 
             return $query->paginate(20);
+        });
+
+        // تحويل صور الإعلانات
+        collect($ads->items())->transform(function ($item) {
+            $item->main_image = StorageUrlHelper::url($item->main_image);
+            return $item;
         });
 
         return $this->paginated($ads);

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Helpers\StorageUrlHelper;
 use App\Interfaces\MarketplaceRepositoryInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -12,11 +13,16 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     public function findBySlug(string $slug): ?object
     {
         return Cache::remember("marketplace_slug_{$slug}", now()->addDay(), function () use ($slug) {
-            return DB::table('marketplaces')
+            $marketplace = DB::table('marketplaces')
                 ->where('slug', $slug)
                 ->where('is_active', true)
                 ->select(['id', 'name', 'slug', 'icon'])
                 ->first();
+
+            if ($marketplace) {
+                StorageUrlHelper::transformField($marketplace, 'icon');
+            }
+            return $marketplace;
         });
     }
 
@@ -29,6 +35,8 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->select(['id', 'name', 'slug', 'icon', 'parent_id', 'sort_order'])
                 ->orderBy('sort_order')
                 ->get();
+
+            StorageUrlHelper::transformCollection($all, 'icon');
 
             $parents  = $all->whereNull('parent_id')->values();
             $children = $all->whereNotNull('parent_id')->groupBy('parent_id');
@@ -60,10 +68,13 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     public function getAmenities(int $marketplaceId): object
     {
         return Cache::remember("marketplace_amenities_{$marketplaceId}", now()->addDay(), function () use ($marketplaceId) {
-            return DB::table('amenities')
+            $amenities = DB::table('amenities')
                 ->where('marketplace_id', $marketplaceId)
                 ->select(['id', 'name', 'icon'])
                 ->get();
+
+            StorageUrlHelper::transformCollection($amenities, 'icon');
+            return $amenities;
         });
     }
 
@@ -71,7 +82,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     public function getBanners(int $marketplaceId, string $position): object
     {
         return Cache::remember("banners_{$position}_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId, $position) {
-            return DB::table('banners')
+            $banners = DB::table('banners')
                 ->where('marketplace_id', $marketplaceId)
                 ->where('position', $position)
                 ->where('is_active', true)
@@ -82,6 +93,9 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->select(['id', 'image', 'link'])
                 ->orderBy('created_at', 'desc')
                 ->get();
+
+            StorageUrlHelper::transformCollection($banners, 'image');
+            return $banners;
         });
     }
 
@@ -89,7 +103,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     public function getMiddleBanner(int $marketplaceId): ?object
     {
         return Cache::remember("banner_middle_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId) {
-            return DB::table('banners')
+            $banner = DB::table('banners')
                 ->where('marketplace_id', $marketplaceId)
                 ->where('position', 'search_page')
                 ->where('is_active', true)
@@ -100,6 +114,11 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->select(['id', 'image', 'link'])
                 ->orderBy('created_at', 'desc')
                 ->first();
+
+            if ($banner) {
+                StorageUrlHelper::transformField($banner, 'image');
+            }
+            return $banner;
         });
     }
 
@@ -107,7 +126,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     public function getFeaturedPartners(int $marketplaceId): object
     {
         return Cache::remember("featured_partners_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId) {
-            return DB::table('featured_partners')
+            $partners = DB::table('featured_partners')
                 ->where(function ($q) use ($marketplaceId) {
                     $q->where('marketplace_id', $marketplaceId)
                       ->orWhereNull('marketplace_id'); // الشركاء اللي بيظهروا في كل الأسواق
@@ -120,6 +139,9 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->select(['id', 'name', 'logo', 'website', 'marketplace_id'])
                 ->orderBy('sort_order')
                 ->get();
+
+            StorageUrlHelper::transformCollection($partners, 'logo');
+            return $partners;
         });
     }
 
@@ -127,7 +149,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     public function getFeaturedAds(int $marketplaceId): object
     {
         return Cache::remember("featured_ads_marketplace_{$marketplaceId}", now()->addMinutes(10), function () use ($marketplaceId) {
-            return DB::table('ads')
+            $ads = DB::table('ads')
                 ->join('areas', 'ads.area_id', '=', 'areas.id')
                 ->join('cities', 'areas.city_id', '=', 'cities.id')
                 ->leftJoin('ad_images', function ($join) {
@@ -155,6 +177,9 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 ->orderByDesc('ads.created_at')
                 ->limit(6)
                 ->get();
+
+            StorageUrlHelper::transformCollection($ads, 'main_image');
+            return $ads;
         });
     }
 
@@ -234,6 +259,14 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
             default      => $query->orderByDesc('ads.is_featured')->orderByDesc('ads.created_at'),
         };
 
-        return $query->paginate(12); // ← 12 في الصفحة
+        $result = $query->paginate(12); // ← 12 في الصفحة
+
+        // تحويل صور الإعلانات
+        collect($result->items())->transform(function ($item) {
+            $item->main_image = StorageUrlHelper::url($item->main_image);
+            return $item;
+        });
+
+        return $result;
     }
 }

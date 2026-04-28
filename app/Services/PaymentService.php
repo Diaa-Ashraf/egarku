@@ -436,29 +436,29 @@ class PaymentService implements PaymentServiceInterface
 
             // ── التوزيع حسب نوع العملية ──
             match ($transaction->type) {
-                'subscription'    => $this->handleSubscriptionActivation($transaction),
-                'feature_ad'      => $this->handleFeatureAdActivation($transaction),
-                'feature_company' => $this->handleFeatureCompanyActivation($transaction, $vendor),
-                'add_banner'      => $this->handleBannerActivation($transaction, $vendor),
-                default           => null,
+                'subscription'      => $this->handleSubscriptionActivation($transaction),
+                'featured'          => $this->handleFeatureAdActivation($transaction),
+                'featured_partner'  => $this->handleFeatureCompanyActivation($transaction, $vendor),
+                'banner'            => $this->handleBannerActivation($transaction, $vendor),
+                default             => null,
             };
 
             // إشعار المعلن
             if ($vendor) {
                 $title = match ($transaction->type) {
-                    'subscription'    => 'تم تفعيل باقتك ✅',
-                    'feature_ad'      => 'تم تمييز إعلانك ⭐',
-                    'feature_company' => 'تم تمييز شركتك ⭐',
-                    'add_banner'      => 'تم استلام طلب البانر 📢',
-                    default           => 'تم معالجة الدفع ✅',
+                    'subscription'      => 'تم تفعيل باقتك ✅',
+                    'featured'          => 'تم تمييز إعلانك ⭐',
+                    'featured_partner'  => 'تم تمييز شركتك ⭐',
+                    'banner'            => 'تم استلام طلب البانر 📢',
+                    default             => 'تم معالجة الدفع ✅',
                 };
 
                 $body = match ($transaction->type) {
-                    'subscription'    => 'تم تفعيل باقتك بنجاح',
-                    'feature_ad'      => 'إعلانك أصبح مميزاً الآن',
-                    'feature_company' => 'شركتك مميزة الآن وستظهر للمستخدمين',
-                    'add_banner'      => 'تم استلام بانرك وهو قيد المراجعة من الإدارة',
-                    default           => 'تم معالجة الدفع بنجاح',
+                    'subscription'      => 'تم تفعيل باقتك بنجاح',
+                    'featured'          => 'إعلانك أصبح مميزاً الآن',
+                    'featured_partner'  => 'شركتك مميزة الآن وستظهر للمستخدمين',
+                    'banner'            => 'تم استلام بانرك وهو قيد المراجعة من الإدارة',
+                    default             => 'تم معالجة الدفع بنجاح',
                 };
 
                 UserNotification::create([
