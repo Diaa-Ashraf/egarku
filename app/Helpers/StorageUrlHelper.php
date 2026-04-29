@@ -22,7 +22,9 @@ class StorageUrlHelper
             return $path;
         }
 
-        return Storage::disk('public')->url($path);
+        // نستخدم asset('storage/...') عشان يكون مطابق للي بيحصل في الداش بورد
+        // لأن asset() بيتعامل بذكاء مع الروابط في حالة استضافة cPanel أو مسارات الـ public
+        return asset('storage/' . ltrim($path, '/'));
     }
 
     /**

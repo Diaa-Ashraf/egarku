@@ -24,6 +24,12 @@ class EditAd extends EditRecord
         ];
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['images'] = $this->record->images->pluck('path')->toArray();
+        return $data;
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         // احفظ الصور مؤقتاً وأزلها من البيانات
