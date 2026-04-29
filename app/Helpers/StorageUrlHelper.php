@@ -22,9 +22,12 @@ class StorageUrlHelper
             return $path;
         }
 
+        // تنظيف المسار من أي كلمة storage مكررة لو كانت محفوظة بالغلط في الداتا بيز
+        $cleanPath = preg_replace('#^/?storage/#', '', ltrim($path, '/'));
+
         // نستخدم asset('storage/...') عشان يكون مطابق للي بيحصل في الداش بورد
         // لأن asset() بيتعامل بذكاء مع الروابط في حالة استضافة cPanel أو مسارات الـ public
-        return asset('storage/' . ltrim($path, '/'));
+        return asset('storage/' . $cleanPath);
     }
 
     /**

@@ -19,8 +19,8 @@ class AdImage extends Model
     /**
      * تحويل المسار النسبي إلى URL كامل
      */
-    public function getUrlAttribute(): string
+    public function getUrlAttribute(): ?string
     {
-        return Storage::disk('public')->url($this->path);
+        return \App\Helpers\StorageUrlHelper::url($this->path);
     }
 }
