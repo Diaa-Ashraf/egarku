@@ -60,17 +60,11 @@ class AdService implements AdServiceInterface
             ->get();
     });
 
-    // 🔥 تحويل صور الإعلان
-    $ad->images?->transform(function ($img) {
-        $img->path = $img->path ? Storage::url($img->path) : null;
-        return $img;
-    });
+    // 🔥 الصور بتتحول تلقائي من خلال الـ Accessor اللي في موديل AdImage (حقل url)
 
     // 🔥 تحويل صور المشابهة
     $similar->transform(function ($item) {
-        $item->main_image = $item->main_image
-            ? Storage::url($item->main_image)
-            : null;
+        $item->main_image = \App\Helpers\StorageUrlHelper::url($item->main_image);
         return $item;
     });
 
@@ -166,11 +160,7 @@ class AdService implements AdServiceInterface
         'vendorProfile.user:id,name,avatar',
     ]);
 
-    // 🔥 تحويل صور الإعلان
-    $ad->images?->transform(function ($img) {
-        $img->path = $img->path ? Storage::url($img->path) : null;
-        return $img;
-    });
+    // 🔥 الصور بتتحول تلقائي من خلال الـ Accessor اللي في موديل AdImage (حقل url)
 
     return [
         'ad'      => $ad,
