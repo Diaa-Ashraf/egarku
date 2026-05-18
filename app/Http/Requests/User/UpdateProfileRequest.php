@@ -11,10 +11,13 @@ class UpdateProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => 'sometimes|string|max:100',
-            'email'       => 'nullable|email|unique:users,email,' . auth()->id(),
-            'is_expat'    => 'boolean',
-            'nationality' => 'nullable|string|max:3',
+            'name'         => 'sometimes|string|max:100',
+            'email'        => 'nullable|email|unique:users,email,' . auth()->id(),
+            'phone'        => 'sometimes|string|max:20|unique:users,phone,' . auth()->id(),
+            'city_id'      => 'nullable|exists:cities,id',
+            'account_type' => 'sometimes|string|in:individual,company',
+            'is_expat'     => 'boolean',
+            'nationality'  => 'nullable|string|max:3',
         ];
     }
 

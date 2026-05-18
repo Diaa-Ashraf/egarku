@@ -65,6 +65,8 @@ trait AuthUser
 
     protected function formatUser(User $user): array
     {
+        $user->loadMissing('city:id,name');
+
         $vendor = Cache::remember(
             "vendor_profile_{$user->id}",
             now()->addMinutes(5),
@@ -77,7 +79,10 @@ trait AuthUser
             'phone'          => $user->phone,
             'email'          => $user->email,
             'avatar'         => $user->avatar,
+            'avatar_url'     => $user->avatar_url,
             'is_expat'       => $user->is_expat,
+            'city_id'        => $user->city_id,
+            'city'           => $user->city,
             'vendor_profile' => $vendor,
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Interfaces\UserRepositoryInterface;
 use App\Interfaces\Services\UserServiceInterface;
 use App\Models\User;
+use App\Models\VendorProfile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -16,10 +17,14 @@ class UserService implements UserServiceInterface
         private UserRepositoryInterface $userRepository
     ) {}
 
+    // ══════════════════════════════════════════════════
     // GET /api/user/profile
+    // ══════════════════════════════════════════════════
     public function getProfile(int $userId): array
     {
         $user   = $this->userRepository->findById($userId);
+        $user->load('city:id,name');
+
         $vendor = Cache::remember(
             "vendor_profile_{$userId}",
             now()->addMinutes(5),
@@ -32,21 +37,37 @@ class UserService implements UserServiceInterface
         ];
     }
 
+    // ══════════════════════════════════════════════════
     // PUT /api/user/profile
+    // الحقول المتاحة من الـ Figma:
+    //   name, phone, email, city_id
+    //   account_type: individual | company | office
+    //   is_expat, nationality
+    // ══════════════════════════════════════════════════
     public function updateProfile(array $data, int $userId): object
     {
         $updated = $this->userRepository->update($userId, collect($data)->only([
             'name',
+            'phone',
             'email',
+            'city_id',
             'is_expat',
             'nationality',
         ])->toArray());
 
+        // لو غيّر نوع الحساب → حدّث vendor_profile
+        if (!empty($data['account_type'])) {
+            $this->updateAccountType($data['account_type'], $userId);
+        }
+
         Cache::forget("vendor_profile_{$userId}");
-        return $updated;
+
+        return $updated->load('city:id,name');
     }
 
+    // ══════════════════════════════════════════════════
     // PUT /api/user/password
+    // ══════════════════════════════════════════════════
     public function updatePassword(array $data, int $userId): void
     {
         $user = User::findOrFail($userId);
@@ -63,41 +84,69 @@ class UserService implements UserServiceInterface
         $user->tokens()->delete();
     }
 
+    // ══════════════════════════════════════════════════
     // POST /api/user/avatar
+    // ══════════════════════════════════════════════════
     public function updateAvatar($file, int $userId): object
     {
         $user = User::findOrFail($userId);
 
-        // حذف الصورة القديمة (لو موجودة)
+        // حذف الصورة القديمة
         if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
             Storage::disk('public')->delete($user->avatar);
         }
 
-        // رفع الصورة الجديدة
         $path = $file->store('avatars', 'public');
+        $user->update(['avatar' => $path]);
 
-        // تحديث المستخدم
-        $user->update([
-            'avatar' => $path,
-        ]);
-
-        // مسح الكاش
         Cache::forget("vendor_profile_{$userId}");
 
         return $user->fresh();
     }
 
+    // ══════════════════════════════════════════════════
+    // PUT /api/user/notifications
+    // تحديث إعدادات الإشعارات من صفحة الإعدادات
+    // email_notifications / sms_notifications / promo_notifications
+    // ══════════════════════════════════════════════════
+    public function updateNotifications(array $data, int $userId): object
+    {
+        $updated = $this->userRepository->update($userId, collect($data)->only([
+            'email_notifications',
+            'sms_notifications',
+            'promo_notifications',
+        ])->toArray());
+
+        Cache::forget("vendor_profile_{$userId}");
+
+        return $updated;
+    }
+
+    // ══════════════════════════════════════════════════
     // DELETE /api/user/account
+    // ══════════════════════════════════════════════════
     public function deleteAccount(int $userId): void
     {
         $user = User::findOrFail($userId);
 
-        // إلغاء كل التوكنات
         $user->tokens()->delete();
-
-        // soft delete
         $this->userRepository->delete($userId);
 
         Cache::forget("vendor_profile_{$userId}");
+    }
+
+    // ══════════════════════════════════════════════════
+    // Private — تحديث نوع الحساب في vendor_profile
+    // ══════════════════════════════════════════════════
+    private function updateAccountType(string $accountType, int $userId): void
+    {
+        // individual → مش محتاج vendor_profile
+        if ($accountType === 'individual') return;
+
+        // company أو office → تأكد إن vendor_profile موجود
+        VendorProfile::updateOrCreate(
+            ['user_id' => $userId],
+            ['vendor_type' => $accountType] // company | office
+        );
     }
 }

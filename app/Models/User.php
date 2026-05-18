@@ -26,6 +26,7 @@ class User extends Authenticatable
         'avatar',
         'is_expat',
         'nationality',
+        'city_id',
     ];
 
     protected $hidden = [
@@ -45,6 +46,11 @@ class User extends Authenticatable
     protected $appends = ['avatar_url'];
 
     // ── Relations ────────────────────────────────────────────
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
+    }
 
     public function vendorProfile()
     {

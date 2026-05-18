@@ -218,27 +218,46 @@ class AdService implements AdServiceInterface
     }
 
     // تسجيل تواصل + إرجاع بيانات الاتصال
-    public function contact(int $adId, string $type, ?int $userId, string $ip): array
+    public function contact(int $adId, string $type, ?int $userId, string $ip, ?string $message = null, bool $wantsWhatsappReply = false): array
     {
         $ad = Ad::findOrFail($adId);
 
         ContactLog::create([
-            'ad_id'        => $adId,
-            'user_id'      => $userId,
-            'contact_type' => $type,
-            'ip_address'   => $ip,
+            'ad_id'                => $adId,
+            'user_id'              => $userId,
+            'contact_type'         => $type,
+            'message'              => $message,
+            'wants_whatsapp_reply' => $wantsWhatsappReply,
+            'ip_address'           => $ip,
         ]);
 
         $this->adRepository->incrementContacts($adId);
 
         // notification لصاحب الإعلان لو مش هو اللي بيتواصل
         if ($userId && $ad->user_id !== $userId) {
+            $sender = DB::table('users')->where('id', $userId)->select('name')->first();
+            $senderName = $sender?->name ?? 'مستخدم';
+
+            if ($type === 'inquiry') {
+                $truncatedMessage = mb_strlen($message) > 50 ? mb_substr($message, 0, 47) . '...' : $message;
+                $title = 'استفسار جديد على إعلانك ✉️';
+                $body = "{$senderName}: \"{$truncatedMessage}\"";
+            } else {
+                $title = 'تواصل معك شخص جديد 📞';
+                $body = "على إعلان \"{$ad->title}\"";
+            }
+
             Notification::create([
                 'user_id' => $ad->user_id,
                 'type'    => 'new_contact',
-                'title'   => 'تواصل معك شخص جديد 📞',
-                'body'    => "على إعلان \"{$ad->title}\"",
-                'data'    => json_encode(['ad_id' => $adId, 'contact_type' => $type]),
+                'title'   => $title,
+                'body'    => $body,
+                'data'    => json_encode([
+                    'ad_id'                => $adId,
+                    'contact_type'         => $type,
+                    'message'              => $message,
+                    'wants_whatsapp_reply' => $wantsWhatsappReply
+                ]),
             ]);
         }
 
@@ -294,6 +313,7 @@ class AdService implements AdServiceInterface
             ->join('ads', 'saved_ads.ad_id', '=', 'ads.id')
             ->join('areas', 'ads.area_id', '=', 'areas.id')
             ->join('cities', 'areas.city_id', '=', 'cities.id')
+            ->join('marketplaces', 'ads.marketplace_id', '=', 'marketplaces.id')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
                     ->where('ad_images.is_main', true);
@@ -310,6 +330,7 @@ class AdService implements AdServiceInterface
                 'ads.created_at',
                 'areas.name as area_name',
                 'cities.name as city_name',
+                'marketplaces.slug as marketplace_slug',
                 'ad_images.path as main_image',
                 'saved_ads.created_at as saved_at',
             ])

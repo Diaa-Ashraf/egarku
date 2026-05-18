@@ -127,11 +127,15 @@ class DashboardRepository implements DashboardRepositoryInterface
             ->select([
                 'contact_logs.id',
                 'contact_logs.contact_type',
+                'contact_logs.message',
+                'contact_logs.wants_whatsapp_reply',
                 'contact_logs.created_at',
                 'ads.id as ad_id',
                 'ads.title as ad_title',
                 'users.name as user_name',
                 'users.avatar as user_avatar',
+                'users.phone as user_phone',
+                'users.email as user_email',
             ])
             ->orderByDesc('contact_logs.created_at')
             ->paginate(20);

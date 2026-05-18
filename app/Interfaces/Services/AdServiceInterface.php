@@ -8,7 +8,7 @@ interface AdServiceInterface
     public function store(array $data, int $userId): array;
     public function update(int $id, array $data, int $userId): object;
     public function destroy(int $id, int $userId): void;
-    public function contact(int $adId, string $type, ?int $userId, string $ip): array;
+    public function contact(int $adId, string $type, ?int $userId, string $ip, ?string $message = null, bool $wantsWhatsappReply = false): array;
     public function toggleSave(int $adId, int $userId): array;
     public function getSaved(int $userId): object;
 }

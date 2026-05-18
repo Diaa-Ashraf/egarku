@@ -68,7 +68,14 @@ class AdController extends Controller
     // POST /api/ads/{id}/contact
     public function contact(ContactAdRequest $request, int $id)
     {
-        $data = $this->adService->contact($id, $request->type, auth()->id(), $request->ip());
+        $data = $this->adService->contact(
+            $id,
+            $request->type,
+            auth()->id(),
+            $request->ip(),
+            $request->message,
+            $request->boolean('wants_whatsapp_reply')
+        );
         return $this->success($data);
     }
 
