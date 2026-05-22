@@ -140,13 +140,20 @@ class UserService implements UserServiceInterface
     // ══════════════════════════════════════════════════
     private function updateAccountType(string $accountType, int $userId): void
     {
-        // individual → مش محتاج vendor_profile
-        if ($accountType === 'individual') return;
+        // individual → حذف vendor_profile
+        if ($accountType === 'individual') {
+            VendorProfile::where('user_id', $userId)->delete();
+            return;
+        }
 
-        // company أو office → تأكد إن vendor_profile موجود
-        VendorProfile::updateOrCreate(
-            ['user_id' => $userId],
-            ['vendor_type' => $accountType] // company | office
-        );
+        // company أو office → حدّث vendor_profile الموجود فقط
+        $vendor = VendorProfile::where('user_id', $userId)->first();
+
+        if ($vendor) {
+            $vendor->update(['vendor_type' => $accountType]);
+        } else {
+            // لو ما عنده vendor_profile → محتاج marketplace_id
+            throw new \Exception('يجب اختيار السوق عند التحويل لحساب تجاري', 422);
+        }
     }
 }

@@ -19,11 +19,22 @@ class VendorRepository implements VendorRepositoryInterface
                 'activeSubscription.plan:id,name',
             ])
             ->select([
-                'id', 'user_id', 'marketplace_id',
-                'vendor_type', 'display_name', 'company_name',
-                'work_phone', 'whatsapp', 'bio', 'website',
-                'is_verified', 'verification_status',
-                'avg_rating', 'reviews_count', 'created_at',
+                'id',
+                'user_id',
+                'marketplace_id',
+                'vendor_type',
+                'display_name',
+                'company_name',
+                'work_phone',
+                'whatsapp',
+                'bio',
+                'website',
+                'is_verified',
+                'verification_status',
+                'avg_rating',
+                'reviews_count',
+                'created_at',
+                'logo',
             ])
             ->first();
     }
@@ -32,6 +43,7 @@ class VendorRepository implements VendorRepositoryInterface
     {
         return VendorProfile::where('user_id', $userId)
             ->with(['marketplace:id,name,slug', 'activeSubscription.plan'])
+            ->select(['id', 'user_id', 'marketplace_id', 'vendor_type', 'display_name', 'company_name', 'work_phone', 'whatsapp', 'bio', 'website', 'is_verified', 'verification_status', 'logo'])
             ->first();
     }
 
@@ -50,14 +62,18 @@ class VendorRepository implements VendorRepositoryInterface
             ->join('cities', 'areas.city_id', '=', 'cities.id')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
-                     ->where('ad_images.is_main', true);
+                    ->where('ad_images.is_main', true);
             })
             ->where('ads.vendor_profile_id', $vendorId)
             ->where('ads.status', 'active')
             ->whereNull('ads.deleted_at')
             ->select([
-                'ads.id', 'ads.title', 'ads.price', 'ads.price_unit',
-                'ads.is_featured', 'ads.created_at',
+                'ads.id',
+                'ads.title',
+                'ads.price',
+                'ads.price_unit',
+                'ads.is_featured',
+                'ads.created_at',
                 'areas.name as area_name',
                 'cities.name as city_name',
                 'ad_images.path as main_image',
