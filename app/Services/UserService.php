@@ -155,10 +155,12 @@ class UserService implements UserServiceInterface
             $vendor->update(['vendor_type' => $accountType]);
         } else {
             // إنشاء vendor_profile جديد بالـ marketplace_id
+            $user = User::findOrFail($userId);
             VendorProfile::create([
                 'user_id'        => $userId,
                 'vendor_type'    => $accountType,
                 'marketplace_id' => $data['marketplace_id'],
+                'display_name'   => $data['name'] ?? $user->name,
             ]);
         }
     }
