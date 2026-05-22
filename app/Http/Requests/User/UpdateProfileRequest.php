@@ -15,7 +15,8 @@ class UpdateProfileRequest extends FormRequest
             'email'        => 'nullable|email|unique:users,email,' . auth()->id(),
             'phone'        => 'sometimes|string|max:20|unique:users,phone,' . auth()->id(),
             'city_id'      => 'nullable|exists:cities,id',
-            'account_type' => 'sometimes|string|in:individual,company',
+            'account_type'   => 'sometimes|string|in:individual,company',
+            'marketplace_id' => 'required_if:account_type,company|exists:marketplaces,id',
             'is_expat'     => 'boolean',
             'nationality'  => 'nullable|string|max:3',
         ];

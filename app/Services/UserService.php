@@ -57,7 +57,7 @@ class UserService implements UserServiceInterface
 
         // لو غيّر نوع الحساب → حدّث vendor_profile
         if (!empty($data['account_type'])) {
-            $this->updateAccountType($data['account_type'], $userId);
+            $this->updateAccountType($data, $userId);
         }
 
         Cache::forget("vendor_profile_{$userId}");
@@ -138,22 +138,28 @@ class UserService implements UserServiceInterface
     // ══════════════════════════════════════════════════
     // Private — تحديث نوع الحساب في vendor_profile
     // ══════════════════════════════════════════════════
-    private function updateAccountType(string $accountType, int $userId): void
+    private function updateAccountType(array $data, int $userId): void
     {
+        $accountType = $data['account_type'];
+
         // individual → حذف vendor_profile
         if ($accountType === 'individual') {
             VendorProfile::where('user_id', $userId)->delete();
             return;
         }
 
-        // company أو office → حدّث vendor_profile الموجود فقط
+        // company أو office → حدّث vendor_profile الموجود أو أنشئ واحد جديد
         $vendor = VendorProfile::where('user_id', $userId)->first();
 
         if ($vendor) {
             $vendor->update(['vendor_type' => $accountType]);
         } else {
-            // لو ما عنده vendor_profile → محتاج marketplace_id
-            throw new \Exception('يجب اختيار السوق عند التحويل لحساب تجاري', 422);
+            // إنشاء vendor_profile جديد بالـ marketplace_id
+            VendorProfile::create([
+                'user_id'        => $userId,
+                'vendor_type'    => $accountType,
+                'marketplace_id' => $data['marketplace_id'],
+            ]);
         }
     }
 }
