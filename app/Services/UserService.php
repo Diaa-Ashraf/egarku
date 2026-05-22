@@ -44,7 +44,7 @@ class UserService implements UserServiceInterface
     //   account_type: individual | company | office
     //   is_expat, nationality
     // ══════════════════════════════════════════════════
-    public function updateProfile(array $data, int $userId): object
+    public function updateProfile(array $data, int $userId): array
     {
         $updated = $this->userRepository->update($userId, collect($data)->only([
             'name',
@@ -62,7 +62,13 @@ class UserService implements UserServiceInterface
 
         Cache::forget("vendor_profile_{$userId}");
 
-        return $updated->load('city:id,name');
+        $updated->load('city:id,name');
+        $vendor = $updated->vendorProfile?->load('marketplace:id,name,slug', 'activeSubscription.plan');
+
+        return [
+            'user'           => $updated,
+            'vendor_profile' => $vendor,
+        ];
     }
 
     // ══════════════════════════════════════════════════
