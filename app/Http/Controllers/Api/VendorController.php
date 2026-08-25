@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use App\Interfaces\Services\VendorServiceInterface;
 use App\Http\Requests\Vendor\UpdateVendorRequest;
+use Illuminate\Http\Request;
 
 class VendorController extends Controller
 {
