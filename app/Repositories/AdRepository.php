@@ -19,10 +19,12 @@ class AdRepository implements AdRepositoryInterface
                 'category:id,name,slug,parent_id',
                 'category.parent:id,name,slug',
                 'marketplace:id,name,slug',
-                'amenities:id,name,icon',
-                'fieldValues.field:id,key,name,type',
-                'vendorProfile:id,user_id,display_name,company_name,whatsapp,work_phone,avg_rating,reviews_count,is_verified,vendor_type',
-                'vendorProfile.user:id,name,avatar',
+                'amenities:id,marketplace_id,name,icon',
+                'fieldValues.field:id,marketplace_id,key,name,type',
+                'vendorProfile:id,user_id,marketplace_id,display_name,company_name,whatsapp,work_phone,bio,avg_rating,reviews_count,is_verified,vendor_type',
+                'vendorProfile.user:id,name,avatar,created_at',
+                'user:id,name,avatar,phone,created_at',
+                'reviews' => fn($q) => $q->where('is_approved', true)->with('reviewer:id,name,avatar')->latest(),
             ])
             ->first();
     }

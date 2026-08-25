@@ -16,11 +16,11 @@ class VendorController extends Controller
     ) {}
 
     // GET /api/vendors/{id}
-    // صفحة بروفايل المعلن العام
-    public function show(int $id)
+    // صفحة بروفايل المعلن / الشركة العام
+    public function show(int $id, Request $request)
     {
         try {
-            $data = $this->vendorService->show($id);
+            $data = $this->vendorService->show($id, $request->all());
             return $this->success($data);
         } catch (\Exception $e) {
             return $this->notFound($e->getMessage());

@@ -13,22 +13,20 @@ class VendorService implements VendorServiceInterface
         private VendorRepositoryInterface $vendorRepository
     ) {}
 
-    // صفحة بروفايل المعلن
-    public function show(int $vendorId): array
+    // صفحة بروفايل المعلن / الشركة
+    public function show(int $vendorId, array $filters = []): array
     {
-        return Cache::remember("vendor_page_{$vendorId}", now()->addMinutes(10), function () use ($vendorId) {
-            $vendor = $this->vendorRepository->findById($vendorId);
+        $vendor = $this->vendorRepository->findById($vendorId);
 
-            if (!$vendor) {
-                throw new \Exception('المعلن غير موجود', 404);
-            }
+        if (!$vendor) {
+            throw new \Exception('المعلن غير موجود', 404);
+        }
 
-            return [
-                'vendor'  => $vendor,
-                'ads'     => $this->vendorRepository->getAds($vendorId),
-                'reviews' => $this->vendorRepository->getReviews($vendorId),
-            ];
-        });
+        return [
+            'vendor'  => $vendor,
+            'ads'     => $this->vendorRepository->getAds($vendorId, $filters),
+            'reviews' => $this->vendorRepository->getReviews($vendorId),
+        ];
     }
 
     // تعديل بروفايل المعلن

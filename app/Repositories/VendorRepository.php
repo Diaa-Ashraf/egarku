@@ -54,12 +54,13 @@ class VendorRepository implements VendorRepositoryInterface
         return $vendor->fresh();
     }
 
-    // إعلانات المعلن — JOIN للـ performance
-    public function getAds(int $vendorId): object
+    // إعلانات المعلن مع الفلاتر
+    public function getAds(int $vendorId, array $filters = []): object
     {
-        $result = DB::table('ads')
+        $query = DB::table('ads')
             ->join('areas', 'ads.area_id', '=', 'areas.id')
             ->join('cities', 'areas.city_id', '=', 'cities.id')
+            ->join('categories', 'ads.category_id', '=', 'categories.id')
             ->leftJoin('ad_images', function ($join) {
                 $join->on('ad_images.ad_id', '=', 'ads.id')
                     ->where('ad_images.is_main', true);
@@ -76,11 +77,63 @@ class VendorRepository implements VendorRepositoryInterface
                 'ads.created_at',
                 'areas.name as area_name',
                 'cities.name as city_name',
+                'categories.name as category_name',
+                'categories.slug as category_slug',
                 'ad_images.path as main_image',
-            ])
-            ->orderByDesc('ads.is_featured')
-            ->orderByDesc('ads.created_at')
-            ->paginate(12);
+            ]);
+
+        // فلترة المدينة
+        if (!empty($filters['city_id'])) {
+            $query->where('cities.id', $filters['city_id']);
+        }
+
+        // فلترة المنطقة
+        if (!empty($filters['area_id'])) {
+            $query->where('ads.area_id', $filters['area_id']);
+        }
+
+        // فلترة التصنيف / نوع العقار
+        if (!empty($filters['category_id'])) {
+            $query->where('ads.category_id', $filters['category_id']);
+        }
+
+        // فلترة نظام الإيجار (يومي، شهري، سنوي...)
+        if (!empty($filters['price_unit'])) {
+            $query->where('ads.price_unit', $filters['price_unit']);
+        }
+
+        // فلترة نطاق السعر
+        if (!empty($filters['price_min'])) {
+            $query->where('ads.price', '>=', $filters['price_min']);
+        }
+        if (!empty($filters['price_max'])) {
+            $query->where('ads.price', '<=', $filters['price_max']);
+        }
+
+        // فلاتر الحقول الإضافية (مثل: غرف النوم، المساحة، نوع الفرش)
+        if (!empty($filters['fields']) && is_array($filters['fields'])) {
+            foreach ($filters['fields'] as $key => $value) {
+                $query->whereExists(function ($q) use ($key, $value) {
+                    $q->select(DB::raw(1))
+                        ->from('ad_field_values')
+                        ->join('marketplace_fields', 'marketplace_fields.id', '=', 'ad_field_values.field_id')
+                        ->whereColumn('ad_field_values.ad_id', 'ads.id')
+                        ->where('marketplace_fields.key', $key)
+                        ->where('ad_field_values.value', $value);
+                });
+            }
+        }
+
+        // الترتيب
+        $sort = $filters['sort'] ?? 'latest';
+        match ($sort) {
+            'price_asc'   => $query->orderBy('ads.price'),
+            'price_desc'  => $query->orderByDesc('ads.price'),
+            'most_viewed' => $query->orderByDesc('ads.views_count'),
+            default       => $query->orderByDesc('ads.is_featured')->orderByDesc('ads.created_at'),
+        };
+
+        $result = $query->paginate(12);
 
         // تحويل صور الإعلانات
         collect($result->items())->transform(function ($item) {
