@@ -9,8 +9,12 @@ use Illuminate\Support\Carbon;
 class RevenueChartWidget extends ChartWidget
 {
     protected static ?int $sort = 4;
-    protected static ?string $heading = 'مخطط الإيرادات لآخر 6 أشهر (ج.م)';
     protected int|string|array $columnSpan = 'full';
+
+    public function getHeading(): ?string
+    {
+        return 'مخطط الإيرادات لآخر 6 أشهر (ج.م)';
+    }
 
     protected function getData(): array
     {
