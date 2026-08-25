@@ -18,7 +18,7 @@ class NotificationForm
             ->components([
                 Section::make('تفاصيل الإشعار')
                     ->description('إرسال إشعار فوري لمستخدم محدد أو إشعار عام')
-                    ->schema([
+                    ->components([
                         Toggle::make('send_to_all')
                             ->label('إرسال إلى جميع المستخدمين النشطين 📢')
                             ->default(false)

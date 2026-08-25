@@ -42,7 +42,8 @@ class SiteSettings extends Page
             ->components([
                 Section::make('بوابات الدفع الإلكتروني (PayMob & Fawry)')
                     ->description('بيانات وتكامل بوابات الدفع المباشرة')
-                    ->schema([
+                    ->columns(2)
+                    ->components([
                         TextInput::make('paymob_integration')
                             ->label('حالة تكامل Paymob')
                             ->disabled(),
@@ -58,12 +59,12 @@ class SiteSettings extends Page
                         TextInput::make('fawry_base_url')
                             ->label('رابط خدمة فوري (Fawry URL)')
                             ->disabled(),
-                    ])
-                    ->columns(2),
+                    ]),
 
                 Section::make('وسائل الدفع اليدوي (Manual Payments)')
                     ->description('الأرقام المعروضة للمستخدمين للتحويل اليدوي')
-                    ->schema([
+                    ->columns(2)
+                    ->components([
                         TextInput::make('vodafone_number')
                             ->label('رقم فودافون كاش')
                             ->disabled(),
@@ -71,12 +72,12 @@ class SiteSettings extends Page
                         TextInput::make('instapay_number')
                             ->label('عنوان / رقم إنستاباي')
                             ->disabled(),
-                    ])
-                    ->columns(2),
+                    ]),
 
                 Section::make('معلومات البيئة والخادم')
                     ->description('بيانات الخادم والتطبيق')
-                    ->schema([
+                    ->columns(3)
+                    ->components([
                         TextInput::make('app_url')
                             ->label('رابط الموقع (APP_URL)')
                             ->disabled(),
@@ -88,8 +89,7 @@ class SiteSettings extends Page
                         TextInput::make('mail_from')
                             ->label('بريد إرسال الإشعارات')
                             ->disabled(),
-                    ])
-                    ->columns(3),
+                    ]),
             ]);
     }
 }
