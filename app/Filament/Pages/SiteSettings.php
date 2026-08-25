@@ -16,7 +16,7 @@ class SiteSettings extends Page
     protected static ?string $navigationLabel                = 'إعدادات النظام والدفع';
     protected static ?string $title                          = 'إعدادات النظام وبوابات الدفع';
 
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
 
