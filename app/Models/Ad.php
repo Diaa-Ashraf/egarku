@@ -134,4 +134,30 @@ class Ad extends Model
                 ->whereHas('field', fn($q) => $q->where('key', $key));
         });
     }
+
+    protected static function booted(): void
+    {
+        $clearAdCache = function (Ad $ad) {
+            \Illuminate\Support\Facades\Cache::forget('home_featured_ads');
+            \Illuminate\Support\Facades\Cache::forget('home_ads_by_marketplace');
+            \Illuminate\Support\Facades\Cache::forget('home_latest_nearby_');
+            \Illuminate\Support\Facades\Cache::forget("similar_ads_{$ad->id}");
+
+            if ($ad->marketplace_id) {
+                \Illuminate\Support\Facades\Cache::forget("featured_ads_marketplace_{$ad->marketplace_id}");
+            }
+
+            if ($ad->relationLoaded('area') && $ad->area?->city_id) {
+                \Illuminate\Support\Facades\Cache::forget("home_latest_nearby_{$ad->area->city_id}");
+            } elseif ($ad->area_id) {
+                $cityId = \Illuminate\Support\Facades\DB::table('areas')->where('id', $ad->area_id)->value('city_id');
+                if ($cityId) {
+                    \Illuminate\Support\Facades\Cache::forget("home_latest_nearby_{$cityId}");
+                }
+            }
+        };
+
+        static::saved($clearAdCache);
+        static::deleted($clearAdCache);
+    }
 }

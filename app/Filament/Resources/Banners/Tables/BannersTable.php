@@ -87,10 +87,7 @@ class BannersTable
                     ->label('نشط'),
             ])
             ->recordActions([
-                EditAction::make()
-                    ->after(fn($record) =>
-                        Cache::forget("banners_{$record->position}_{$record->marketplace_id}")
-                    ),
+                EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

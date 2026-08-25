@@ -71,6 +71,7 @@ class AdsTable
 
                 IconColumn::make('is_featured')
                     ->label('مميز')
+                    ->state(fn(Ad $record) => $record->is_featured && ($record->featured_until === null || $record->featured_until > now()))
                     ->boolean(),
 
                 TextColumn::make('views_count')
@@ -161,7 +162,7 @@ class AdsTable
                     ->label('تمييز')
                     ->icon('heroicon-o-star')
                     ->color('warning')
-                    ->visible(fn(Ad $r) => $r->status === 'active' && !$r->is_featured)
+                    ->visible(fn(Ad $r) => $r->status === 'active' && (!$r->is_featured || ($r->featured_until !== null && $r->featured_until <= now())))
                     ->form([
                         \Filament\Forms\Components\Select::make('duration')
                             ->label('المدة')
@@ -174,7 +175,22 @@ class AdsTable
                             'is_featured'    => true,
                             'featured_until' => now()->addDays($data['duration']),
                         ]);
-                        FilamentNotification::make()->title('تم التمييز')->warning()->send();
+                        FilamentNotification::make()->title('تم تمييز الإعلان بنجاح')->warning()->send();
+                    }),
+
+                // ⛔ إلغاء التمييز
+                Action::make('unfeature')
+                    ->label('إلغاء التمييز')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn(Ad $r) => $r->is_featured && ($r->featured_until === null || $r->featured_until > now()))
+                    ->action(function (Ad $record) {
+                        $record->update([
+                            'is_featured'    => false,
+                            'featured_until' => null,
+                        ]);
+                        FilamentNotification::make()->title('تم إلغاء تمييز الإعلان')->success()->send();
                     }),
 
                 EditAction::make(),

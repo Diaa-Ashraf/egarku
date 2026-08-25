@@ -9,4 +9,5 @@ interface HomeRepositoryInterface
     public function getFeaturedPartners(): object;
     public function getFeaturedAds(): object;
     public function getAdsByMarketplace(): object; // تسوق حسب الفئة — 4 إعلانات من كل سوق
+    public function getLatestNearbyAds(?int $cityId): object; // أحدث الإعلانات في أقرب المناطق
 }

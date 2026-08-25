@@ -42,4 +42,17 @@ class Marketplace extends Model
     {
         return $q->where('is_active', true)->orderBy('sort_order');
     }
+
+    protected static function booted(): void
+    {
+        $clearMarketplaceCache = function (Marketplace $marketplace) {
+            \Illuminate\Support\Facades\Cache::forget('marketplaces_all');
+            \Illuminate\Support\Facades\Cache::forget("marketplace_slug_{$marketplace->slug}");
+            \Illuminate\Support\Facades\Cache::forget('home_featured_ads');
+            \Illuminate\Support\Facades\Cache::forget('home_ads_by_marketplace');
+        };
+
+        static::saved($clearMarketplaceCache);
+        static::deleted($clearMarketplaceCache);
+    }
 }

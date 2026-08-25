@@ -14,16 +14,12 @@ class HomeService implements HomeServiceInterface
 
     public function getHomeData(?int $cityId): array
     {
-        $cacheKey = "homepage_data_{$cityId}";
-
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($cityId) {
-            return [
-                'marketplaces'        => $this->homeRepository->getMarketplaces(),
-                'top_banners'         => $this->homeRepository->getTopBanners($cityId),
-                'featured_partners'   => $this->homeRepository->getFeaturedPartners(),
-                'featured_ads'        => $this->homeRepository->getFeaturedAds(),
-                'ads_by_marketplace'  => $this->homeRepository->getAdsByMarketplace(), // تسوق حسب الفئة
-            ];
-        });
+        return [
+            'top_banners'        => $this->homeRepository->getTopBanners($cityId),
+            'featured_ads'       => $this->homeRepository->getFeaturedAds(),
+            'featured_partners'  => $this->homeRepository->getFeaturedPartners(),
+            'ads_by_marketplace' => $this->homeRepository->getAdsByMarketplace(), // تسوق حسب الفئة
+            'latest_nearby_ads'  => $this->homeRepository->getLatestNearbyAds($cityId), // أحدث الإعلانات في أقرب المناطق
+        ];
     }
 }

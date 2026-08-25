@@ -68,10 +68,21 @@ class HomeRepository implements HomeRepositoryInterface
         });
     }
 
-    // الإعلانات المميزة — 12 إعلان
+    // الإعلانات المميزة — مجمّعة حسب السوق
     public function getFeaturedAds(): object
     {
         return Cache::remember('home_featured_ads', now()->addMinutes(10), function () {
+
+            // جيب الأسواق النشطة
+            $marketplaces = DB::table('marketplaces')
+                ->where('is_active', true)
+                ->select(['id', 'name', 'slug', 'icon'])
+                ->orderBy('sort_order')
+                ->get();
+
+            StorageUrlHelper::transformCollection($marketplaces, 'icon');
+
+            // جيب كل الإعلانات المميزة النشطة
             $ads = DB::table('ads')
                 ->join('areas', 'ads.area_id', '=', 'areas.id')
                 ->join('cities', 'areas.city_id', '=', 'cities.id')
@@ -98,11 +109,17 @@ class HomeRepository implements HomeRepositoryInterface
                     'ad_images.path as main_image',
                 ])
                 ->orderByDesc('ads.created_at')
-                ->limit(12) // ← 12 بدل 8
                 ->get();
 
             StorageUrlHelper::transformCollection($ads, 'main_image');
-            return $ads;
+
+            // تجميع الإعلانات تحت كل سوق
+            $grouped = $ads->groupBy('marketplace_id');
+
+            return $marketplaces->map(function ($marketplace) use ($grouped) {
+                $marketplace->ads = $grouped->get($marketplace->id, collect())->values();
+                return $marketplace;
+            })->filter(fn($marketplace) => $marketplace->ads->isNotEmpty())->values();
         });
     }
 
@@ -165,6 +182,49 @@ class HomeRepository implements HomeRepositoryInterface
                     ->values();
                 return $marketplace;
             })->filter(fn($marketplace) => $marketplace->ads->isNotEmpty())->values();
+        });
+    }
+
+    // أحدث الإعلانات في أقرب المناطق — 12 إعلان
+    public function getLatestNearbyAds(?int $cityId): object
+    {
+        $key = "home_latest_nearby_{$cityId}";
+
+        return Cache::remember($key, now()->addMinutes(10), function () use ($cityId) {
+            $query = DB::table('ads')
+                ->join('areas', 'ads.area_id', '=', 'areas.id')
+                ->join('cities', 'areas.city_id', '=', 'cities.id')
+                ->leftJoin('ad_images', function ($join) {
+                    $join->on('ad_images.ad_id', '=', 'ads.id')
+                         ->where('ad_images.is_main', true);
+                })
+                ->where('ads.status', 'active')
+                ->whereNull('ads.deleted_at')
+                ->select([
+                    'ads.id',
+                    'ads.title',
+                    'ads.price',
+                    'ads.price_unit',
+                    'ads.marketplace_id',
+                    'ads.is_featured',
+                    'ads.created_at',
+                    'areas.name as area_name',
+                    'cities.name as city_name',
+                    'ad_images.path as main_image',
+                ]);
+
+            // فلتر المدينة لو موجودة
+            if ($cityId) {
+                $query->where('cities.id', $cityId);
+            }
+
+            $ads = $query
+                ->orderByDesc('ads.created_at')
+                ->limit(12)
+                ->get();
+
+            StorageUrlHelper::transformCollection($ads, 'main_image');
+            return $ads;
         });
     }
 }

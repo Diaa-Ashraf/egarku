@@ -100,6 +100,14 @@ class AdForm
                             ])
                             ->nullable(),
 
+                        \Filament\Forms\Components\DatePicker::make('available_from')
+                            ->label('متاح من')
+                            ->nullable(),
+
+                        \Filament\Forms\Components\DatePicker::make('available_to')
+                            ->label('متاح حتى')
+                            ->nullable(),
+
                         Textarea::make('description')
                             ->label('الوصف')
                             ->required()

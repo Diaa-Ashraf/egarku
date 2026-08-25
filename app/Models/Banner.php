@@ -61,4 +61,19 @@ class Banner extends Model
     {
         return $q->where('position', $p);
     }
+
+    protected static function booted(): void
+    {
+        $clearBannerCache = function (Banner $banner) {
+            \Illuminate\Support\Facades\Cache::forget("banners_{$banner->position}_{$banner->marketplace_id}");
+            \Illuminate\Support\Facades\Cache::forget("banner_middle_{$banner->marketplace_id}");
+            \Illuminate\Support\Facades\Cache::forget('banners_homepage_top_');
+            if ($banner->city_id) {
+                \Illuminate\Support\Facades\Cache::forget("banners_homepage_top_{$banner->city_id}");
+            }
+        };
+
+        static::saved($clearBannerCache);
+        static::deleted($clearBannerCache);
+    }
 }

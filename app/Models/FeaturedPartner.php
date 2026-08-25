@@ -38,4 +38,16 @@ class FeaturedPartner extends Model
         );
     }
 
+    protected static function booted(): void
+    {
+        $clearPartnerCache = function (FeaturedPartner $partner) {
+            \Illuminate\Support\Facades\Cache::forget('featured_partners_home');
+            if ($partner->marketplace_id) {
+                \Illuminate\Support\Facades\Cache::forget("featured_partners_{$partner->marketplace_id}");
+            }
+        };
+
+        static::saved($clearPartnerCache);
+        static::deleted($clearPartnerCache);
+    }
 }
