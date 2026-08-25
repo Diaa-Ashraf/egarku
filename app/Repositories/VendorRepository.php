@@ -34,7 +34,6 @@ class VendorRepository implements VendorRepositoryInterface
                 'avg_rating',
                 'reviews_count',
                 'created_at',
-                'logo',
             ])
             ->first();
     }
@@ -43,7 +42,7 @@ class VendorRepository implements VendorRepositoryInterface
     {
         return VendorProfile::where('user_id', $userId)
             ->with(['marketplace:id,name,slug', 'activeSubscription.plan'])
-            ->select(['id', 'user_id', 'marketplace_id', 'vendor_type', 'display_name', 'company_name', 'work_phone', 'whatsapp', 'bio', 'website', 'is_verified', 'verification_status', 'logo'])
+            ->select(['id', 'user_id', 'marketplace_id', 'vendor_type', 'display_name', 'company_name', 'work_phone', 'whatsapp', 'bio', 'website', 'is_verified', 'verification_status'])
             ->first();
     }
 

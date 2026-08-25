@@ -44,12 +44,14 @@ class VendorService implements VendorServiceInterface
             'bio', 'website',
         ])->toArray();
 
-        // رفع اللوجو لو موجود
+        // رفع اللوجو / الأفاتار وتحديثه على حساب المستخدم
         if (!empty($data['logo'])) {
-            if ($vendor->logo) {
-                Storage::disk('public')->delete($vendor->logo);
+            $user = \App\Models\User::find($userId);
+            if ($user?->avatar) {
+                Storage::disk('public')->delete(str_replace('storage/', '', $user->avatar));
             }
-            $updateData['logo'] = $data['logo']->store('vendors/logos', 'public');
+            $avatarPath = $data['logo']->store('avatars', 'public');
+            $user?->update(['avatar' => $avatarPath]);
         }
 
         $updated = $this->vendorRepository->update($vendor->id, $updateData);

@@ -86,10 +86,10 @@ class VendorProfile extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        if (!$this->logo) {
-            return null;
+        if ($this->user?->avatar) {
+            return \App\Helpers\StorageUrlHelper::url($this->user->avatar);
         }
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->logo);
+        return null;
     }
 
     public function getVerificationDocUrlAttribute(): ?string
