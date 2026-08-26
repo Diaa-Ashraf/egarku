@@ -13,7 +13,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class LatestPendingAdsWidget extends BaseWidget
 {
-    protected static ?int $sort            = 2;
+    protected static ?int $sort            = 3;
     protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table

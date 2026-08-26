@@ -8,8 +8,13 @@ use Illuminate\Support\Carbon;
 
 class RevenueChartWidget extends ChartWidget
 {
-    protected static ?int $sort = 4;
-    protected int|string|array $columnSpan = 'full';
+    protected static ?int $sort = 5;
+
+    protected int|string|array $columnSpan = [
+        'default' => 'full',
+        'md'      => 1,
+        'xl'      => 1,
+    ];
 
     public function getHeading(): ?string
     {
@@ -18,20 +23,24 @@ class RevenueChartWidget extends ChartWidget
 
     protected function getData(): array
     {
+        $start = Carbon::now()->subMonths(5)->startOfMonth();
+
+        $totals = Transaction::query()
+            ->where('status', 'completed')
+            ->where('created_at', '>=', $start)
+            ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total')
+            ->groupBy('year', 'month')
+            ->get()
+            ->keyBy(fn ($row) => sprintf('%04d-%02d', $row->year, $row->month));
+
         $months = [];
-        $data   = [];
+        $data = [];
 
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            $monthName = $date->translatedFormat('F Y');
-            $months[] = $monthName;
-
-            $total = Transaction::where('status', 'completed')
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->sum('amount');
-
-            $data[] = (float) $total;
+            $key = $date->format('Y-m');
+            $months[] = $date->translatedFormat('F Y');
+            $data[] = (float) ($totals[$key]->total ?? 0);
         }
 
         return [
@@ -39,8 +48,8 @@ class RevenueChartWidget extends ChartWidget
                 [
                     'label'           => 'إجمالي الإيرادات (ج.م)',
                     'data'            => $data,
-                    'borderColor'     => '#10b981',
-                    'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
+                    'borderColor'     => '#0ea5e9',
+                    'backgroundColor' => 'rgba(14, 165, 233, 0.12)',
                     'fill'            => true,
                     'tension'         => 0.4,
                 ],

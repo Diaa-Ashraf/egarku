@@ -12,6 +12,12 @@ class LatestVendorsWidget extends BaseWidget
 {
     protected static ?int $sort = 6;
 
+    protected int|string|array $columnSpan = [
+        'default' => 'full',
+        'md'      => 1,
+        'xl'      => 1,
+    ];
+
     public function table(Table $table): Table
     {
         return $table
@@ -24,13 +30,12 @@ class LatestVendorsWidget extends BaseWidget
             ->paginated(false)
             ->modifyQueryUsing(fn ($query) => $query->limit(5))
             ->columns([
-                TextColumn::make('display_name')->label('الاسم التجاري'),
-                TextColumn::make('user.name')->label('المستخدم'),
+                TextColumn::make('display_name')->label('الاسم التجاري')->limit(24),
                 TextColumn::make('marketplace.name')->label('السوق')->badge(),
                 TextColumn::make('vendor_type')->label('النوع')
-                    ->formatStateUsing(fn($state) => $state === 'company' ? 'شركة' : 'فرد'),
+                    ->formatStateUsing(fn ($state) => $state === 'company' ? 'شركة' : 'فرد'),
                 IconColumn::make('is_verified')->label('موثق')->boolean(),
-                TextColumn::make('created_at')->label('تاريخ التسجيل')->since(),
+                TextColumn::make('created_at')->label('التسجيل')->since(),
             ])
             ->emptyStateHeading('لا يوجد معلنين');
     }

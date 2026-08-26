@@ -1,159 +1,180 @@
-<div class="fi-section rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-    <div class="flex items-center gap-2 mb-6">
-        <span class="text-amber-500 text-xl font-bold">⚡</span>
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white">الوصول السريع واختصارات النظام</h2>
-    </div>
+<x-filament-widgets::widget>
+    @php
+        $sections = $this->getSections();
+        $count = $this->getShortcutCount();
 
-    <!-- قسم الإعلانات والأسواق -->
-    <div class="mb-5">
-        <div class="flex items-center gap-1 text-xs font-semibold text-gray-400 dark:text-gray-400 mb-3">
-            <span>📢</span>
-            <span>إدارة الإعلانات والأسواق</span>
+        $colorMap = [
+            'amber'   => 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+            'pink'    => 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
+            'rose'    => 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+            'indigo'  => 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+            'orange'  => 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+            'sky'     => 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+            'emerald' => 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            'blue'    => 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+            'teal'    => 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
+            'slate'   => 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
+        ];
+    @endphp
+
+    <x-filament::section
+        icon="heroicon-o-bolt"
+        icon-color="warning"
+        heading="الوصول السريع"
+    >
+        <x-slot name="afterHeader">
+            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-200 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">
+                {{ $count }} اختصار
+            </span>
+        </x-slot>
+
+        <div class="space-y-6" dir="rtl">
+            @foreach ($sections as $section)
+                <div>
+                    <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        <x-filament::icon
+                            :icon="$section['icon']"
+                            class="h-4 w-4"
+                        />
+                        <span>{{ $section['title'] }}</span>
+                    </div>
+
+                    <div class="egarku-qa-grid">
+                        @foreach ($section['items'] as $item)
+                            @php
+                                $tone = $colorMap[$item['color']] ?? $colorMap['slate'];
+                            @endphp
+                            <a href="{{ $item['url'] }}" class="egarku-qa-item group">
+                                <span class="egarku-qa-icon {{ $tone }}">
+                                    <x-filament::icon
+                                        :icon="$item['icon']"
+                                        class="h-5 w-5"
+                                    />
+                                </span>
+                                <span class="egarku-qa-label">{{ $item['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-            <a href="/admin/ads/create" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-amber-500/10 text-amber-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-plus-circle class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">إضافة إعلان</span>
-            </a>
+    </x-filament::section>
 
-            <a href="/admin/ads" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-megaphone class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">كل الإعلانات</span>
-            </a>
+    <style>
+        .egarku-qa-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
 
-            <a href="/admin/marketplaces" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-building-storefront class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">الأسواق</span>
-            </a>
+        @media (min-width: 640px) {
+            .egarku-qa-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
 
-            <a href="/admin/categories" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-tag class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">الأقسام</span>
-            </a>
+        @media (min-width: 768px) {
+            .egarku-qa-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
 
-            <a href="/admin/banners" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-pink-500/10 text-pink-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-photo class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">البانرات</span>
-            </a>
+        @media (min-width: 1024px) {
+            .egarku-qa-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
 
-            <a href="/admin/featured-partners" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-purple-500/10 text-purple-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-sparkles class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">شركاء التميز</span>
-            </a>
+        @media (min-width: 1280px) {
+            .egarku-qa-grid {
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+            }
+        }
 
-            <a href="/admin/contact-logs" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-chat-bubble-left-right class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">سجل التواصل</span>
-            </a>
-        </div>
-    </div>
+        .egarku-qa-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.625rem;
+            padding: 0.875rem 0.5rem;
+            border-radius: 0.875rem;
+            text-decoration: none;
+            background: rgb(249 250 251);
+            border: 1px solid rgb(243 244 246);
+            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+        }
 
-    <!-- قسم المالية والاشتراكات -->
-    <div class="mb-5">
-        <div class="flex items-center gap-1 text-xs font-semibold text-gray-400 dark:text-gray-400 mb-3">
-            <span>💳</span>
-            <span>المالية والاشتراكات</span>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-            <a href="/admin/transactions" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-banknotes class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">سجل المدفوعات</span>
-            </a>
+        .dark .egarku-qa-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
 
-            <a href="/admin/plans" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-rectangle-stack class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">باقات الاشتراك</span>
-            </a>
+        .egarku-qa-item:hover {
+            background: rgb(239 246 255);
+            border-color: rgb(191 219 254);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -8px rgba(37, 99, 235, 0.25);
+        }
 
-            <a href="/admin/service-prices" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-amber-500/10 text-amber-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-currency-dollar class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">أسعار الخدمات</span>
-            </a>
+        .dark .egarku-qa-item:hover {
+            background: rgba(59, 130, 246, 0.12);
+            border-color: rgba(59, 130, 246, 0.35);
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.55);
+        }
 
-            <a href="/admin/featured-purchases" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-orange-500/10 text-orange-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-star class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">مشتريات التمييز</span>
-            </a>
+        .egarku-qa-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.75rem;
+            transition: transform 0.15s ease;
+        }
 
-            <a href="/admin/vendor-subscriptions" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-violet-500/10 text-violet-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-identification class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">اشتراكات المعلنين</span>
-            </a>
-        </div>
-    </div>
+        .egarku-qa-item:hover .egarku-qa-icon {
+            transform: scale(1.08);
+        }
 
-    <!-- قسم المستخدمين والنظام -->
-    <div>
-        <div class="flex items-center gap-1 text-xs font-semibold text-gray-400 dark:text-gray-400 mb-3">
-            <span>⚙️</span>
-            <span>المستخدمين والنظام</span>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-            <a href="/admin/users/create" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-user-plus class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">مستخدم جديد</span>
-            </a>
+        .egarku-qa-icon svg {
+            width: 1.25rem !important;
+            height: 1.25rem !important;
+            min-width: 1.25rem !important;
+            min-height: 1.25rem !important;
+            max-width: 1.25rem !important;
+            max-height: 1.25rem !important;
+        }
 
-            <a href="/admin/users" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-sky-500/10 text-sky-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-users class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">المستخدمين</span>
-            </a>
+        .egarku-qa-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1.25;
+            text-align: center;
+            color: rgb(55 65 81);
+            word-break: break-word;
+        }
 
-            <a href="/admin/vendor-profiles" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-teal-500/10 text-teal-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-building-office-2 class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">المعلنون والشركات</span>
-            </a>
+        .dark .egarku-qa-label {
+            color: rgb(209 213 219);
+        }
 
-            <a href="/admin/notifications" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-amber-500/10 text-amber-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-bell-alert class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">إرسال إشعار</span>
-            </a>
+        .egarku-qa-item:hover .egarku-qa-label {
+            color: rgb(29 78 216);
+        }
 
-            <a href="/admin/site-settings" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-gray-500/10 text-gray-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-cog-6-tooth class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">الإعدادات</span>
-            </a>
+        .dark .egarku-qa-item:hover .egarku-qa-label {
+            color: rgb(147 197 253);
+        }
 
-            <a href="/admin/admin-users" class="flex flex-col items-center justify-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 hover:bg-primary-50 dark:hover:bg-primary-950/30 border border-gray-100 dark:border-gray-800 transition duration-150 group">
-                <div class="p-2 rounded-lg bg-rose-500/10 text-rose-500 mb-1 group-hover:scale-110 transition">
-                    <x-heroicon-o-shield-check class="w-6 h-6" />
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">مديرو النظام</span>
-            </a>
-        </div>
-    </div>
-</div>
+        @media (max-width: 639px) {
+            .egarku-qa-item {
+                padding: 0.75rem 0.375rem;
+            }
+
+            .egarku-qa-label {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</x-filament-widgets::widget>

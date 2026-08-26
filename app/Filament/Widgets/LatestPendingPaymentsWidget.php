@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 class LatestPendingPaymentsWidget extends BaseWidget
 {
-    protected static ?int $sort = 3;
+    protected static ?int $sort = 4;
     protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
