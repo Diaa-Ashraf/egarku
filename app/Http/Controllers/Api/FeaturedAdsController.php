@@ -47,6 +47,7 @@ class FeaturedAdsController extends Controller
                     'ads.price',
                     'ads.price_unit',
                     'ads.is_for_expats',
+                    'ads.is_for_students',
                     'ads.views_count',
                     'ads.contacts_count',
                     'ads.featured_until',

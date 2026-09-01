@@ -17,11 +17,11 @@ class MarketplaceController extends Controller
 
     // GET /api/marketplace/{slug}
     // بيانات السوق + كاتيجوريز + فيلدات + مميزات
-    // + بانرات + شركاء مميزون + إعلانات مميزة
-    public function show(string $slug)
+    // + بانرات + شركاء مميزون + إعلانات مميزة + إعلانات عادية (12)
+    public function show(string $slug, Request $request)
     {
         try {
-            $data = $this->marketplaceService->getMarketplacePage($slug);
+            $data = $this->marketplaceService->getMarketplacePage($slug, $request->all());
             return $this->success($data);
         } catch (\Exception $e) {
             return $this->notFound($e->getMessage());

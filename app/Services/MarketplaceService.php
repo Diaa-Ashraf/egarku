@@ -11,14 +11,16 @@ class MarketplaceService implements MarketplaceServiceInterface
         private MarketplaceRepositoryInterface $marketplaceRepository
     ) {}
 
-    // صفحة السوق — كل البيانات الثابتة + البانرات + المميزون + الإعلانات المميزة
-    public function getMarketplacePage(string $slug): array
+    // صفحة السوق — كل البيانات الثابتة + البانرات + المميزون + الإعلانات المميزة + الإعلانات العادية (12 إعلان)
+    public function getMarketplacePage(string $slug, array $filters = []): array
     {
         $marketplace = $this->marketplaceRepository->findBySlug($slug);
 
         if (!$marketplace) {
             throw new \Exception('السوق غير موجود', 404);
         }
+
+        $ads = $this->marketplaceRepository->getAds($marketplace->id, $filters);
 
         return [
             'marketplace'       => $marketplace,
@@ -29,6 +31,13 @@ class MarketplaceService implements MarketplaceServiceInterface
             'middle_banner'     => $this->marketplaceRepository->getMiddleBanner($marketplace->id),
             'featured_partners' => $this->marketplaceRepository->getFeaturedPartners($marketplace->id),
             'featured_ads'      => $this->marketplaceRepository->getFeaturedAds($marketplace->id),
+            'ads'               => $ads->items(),
+            'meta'              => [
+                'total'        => $ads->total(),
+                'current_page' => $ads->currentPage(),
+                'last_page'    => $ads->lastPage(),
+                'per_page'     => $ads->perPage(),
+            ],
         ];
     }
 

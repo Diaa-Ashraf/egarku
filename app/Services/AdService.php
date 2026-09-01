@@ -102,6 +102,7 @@ class AdService implements AdServiceInterface
             'price'             => $data['price'],
             'price_unit'        => $data['price_unit'] ?? null,
             'is_for_expats'     => $data['is_for_expats'] ?? false,
+            'is_for_students'   => $data['is_for_students'] ?? false,
             'latitude'          => $data['latitude'] ?? null,
             'longitude'         => $data['longitude'] ?? null,
             'address'           => $data['address'] ?? null,
@@ -180,7 +181,7 @@ class AdService implements AdServiceInterface
 
         DB::transaction(function () use ($ad, $data) {
             $ad->update([
-                ...collect($data)->only(['title', 'description', 'price', 'price_unit', 'area_id', 'is_for_expats', 'latitude', 'longitude', 'address'])->toArray(),
+                ...collect($data)->only(['title', 'description', 'price', 'price_unit', 'area_id', 'is_for_expats', 'is_for_students', 'latitude', 'longitude', 'address'])->toArray(),
                 'status' => 'pending', // يرجع للمراجعة بعد التعديل
             ]);
 

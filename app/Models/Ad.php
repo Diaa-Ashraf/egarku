@@ -23,6 +23,7 @@ class Ad extends Model
         'is_featured',
         'featured_until',
         'is_for_expats',
+        'is_for_students',
         'views_count',
         'contacts_count',
         'latitude',
@@ -32,10 +33,11 @@ class Ad extends Model
     ];
 
     protected $casts = [
-        'is_featured'    => 'boolean',
-        'is_for_expats'  => 'boolean',
-        'featured_until' => 'datetime',
-        'expires_at'     => 'datetime',
+        'is_featured'      => 'boolean',
+        'is_for_expats'    => 'boolean',
+        'is_for_students'  => 'boolean',
+        'featured_until'   => 'datetime',
+        'expires_at'       => 'datetime',
     ];
 
     // ── Relations ────────────────────────────────────────────
@@ -121,6 +123,10 @@ class Ad extends Model
     public function scopeForExpats($q)
     {
         return $q->where('is_for_expats', true);
+    }
+    public function scopeForStudents($q)
+    {
+        return $q->where('is_for_students', true);
     }
     public function scopeFeaturedFirst($q)
     {

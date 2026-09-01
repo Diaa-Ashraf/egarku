@@ -105,6 +105,12 @@ class AdsTable
                 TernaryFilter::make('is_featured')
                     ->label('مميز'),
 
+                TernaryFilter::make('is_for_expats')
+                    ->label('سكن مغتربين'),
+
+                TernaryFilter::make('is_for_students')
+                    ->label('سكن طلاب'),
+
                 TrashedFilter::make(),
             ])
 

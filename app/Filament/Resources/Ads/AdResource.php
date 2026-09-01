@@ -25,6 +25,11 @@ class AdResource extends Resource
     protected static string|BackedEnum|null $navigationIcon  = 'heroicon-o-megaphone';
     protected static string|UnitEnum|null   $navigationGroup = 'الإعلانات';
 
+    public static function canAccess(): bool
+    {
+        return auth('admin')->user()?->can('ads.view') ?? false;
+    }
+
     // Eager Loading — بيجيب العلاقات في query واحدة
     public static function getEloquentQuery(): Builder
     {

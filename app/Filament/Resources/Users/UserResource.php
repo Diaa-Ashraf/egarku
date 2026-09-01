@@ -25,6 +25,11 @@ class UserResource extends Resource
     protected static string|BackedEnum|null $navigationIcon  = 'heroicon-o-users';
     protected static string|UnitEnum|null   $navigationGroup = 'المستخدمين';
 
+    public static function canAccess(): bool
+    {
+        return auth('admin')->user()?->can('users.view') ?? false;
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

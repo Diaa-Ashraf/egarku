@@ -24,6 +24,11 @@ class VendorProfileResource extends Resource
     protected static string|BackedEnum|null $navigationIcon  = 'heroicon-o-building-office';
     protected static string|UnitEnum|null   $navigationGroup = 'المستخدمين';
 
+    public static function canAccess(): bool
+    {
+        return auth('admin')->user()?->can('vendors.view') ?? false;
+    }
+
     // Eager Loading
     public static function getEloquentQuery(): Builder
     {

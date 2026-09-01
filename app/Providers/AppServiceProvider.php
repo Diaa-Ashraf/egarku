@@ -82,10 +82,25 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             NotificationRepositoryInterface::class,
             \App\Repositories\NotificationRepository::class
-
         );
 
-       
+        $this->app->bind(
+            \App\Interfaces\SearchRepositoryInterface::class,
+            \App\Repositories\SearchRepository::class
+        );
+        $this->app->bind(
+            \App\Interfaces\Services\SearchServiceInterface::class,
+            \App\Services\SearchService::class
+        );
+
+        $this->app->bind(
+            \App\Interfaces\ChatRepositoryInterface::class,
+            \App\Repositories\ChatRepository::class
+        );
+        $this->app->bind(
+            \App\Interfaces\Services\ChatServiceInterface::class,
+            \App\Services\ChatService::class
+        );
     }
 
     /**

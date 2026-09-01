@@ -24,6 +24,11 @@ class TransactionResource extends Resource
     protected static string|BackedEnum|null $navigationIcon  = 'heroicon-o-banknotes';
     protected static string|UnitEnum|null   $navigationGroup = 'المالية';
 
+    public static function canAccess(): bool
+    {
+        return auth('admin')->user()?->can('payments.view') ?? false;
+    }
+
     // Eager Loading
     public static function getEloquentQuery(): Builder
     {

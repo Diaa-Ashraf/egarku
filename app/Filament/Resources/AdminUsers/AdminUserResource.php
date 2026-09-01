@@ -23,6 +23,11 @@ class AdminUserResource extends Resource
     protected static string|BackedEnum|null $navigationIcon  = 'heroicon-o-shield-check';
     protected static string|UnitEnum|null   $navigationGroup = 'النظام';
 
+    public static function canAccess(): bool
+    {
+        return auth('admin')->user()?->can('roles.manage') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return AdminUserForm::configure($schema);

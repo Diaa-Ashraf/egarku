@@ -23,6 +23,11 @@ class PlanResource extends Resource
     protected static string|BackedEnum|null $navigationIcon  = 'heroicon-o-credit-card';
     protected static string|UnitEnum|null   $navigationGroup = 'الإعداد';
 
+    public static function canAccess(): bool
+    {
+        return auth('admin')->user()?->can('plans.view') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PlanForm::configure($schema);

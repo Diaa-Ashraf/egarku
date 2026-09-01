@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             $this->call([
                 EgyptLoacationSeeder::class,
                 AdminSeeder::class,
+                RoleSeeder::class,
             ]);
     }
 }

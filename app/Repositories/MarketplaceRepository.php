@@ -203,6 +203,7 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
                 'ads.price_unit',
                 'ads.is_featured',
                 'ads.is_for_expats',
+                'ads.is_for_students',
                 'ads.created_at',
                 'areas.id as area_id',
                 'areas.name as area_name',
@@ -234,6 +235,10 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
 
         if (!empty($filters['for_expats'])) {
             $query->where('ads.is_for_expats', true);
+        }
+
+        if (!empty($filters['for_students'])) {
+            $query->where('ads.is_for_students', true);
         }
 
         // فلاتر الفيلدات الديناميكية: fields[rooms]=3&fields[furnished]=yes

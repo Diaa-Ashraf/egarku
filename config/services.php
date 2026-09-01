@@ -53,4 +53,10 @@ return [
         'instapay_number' => env('INSTAPAY_NUMBER'),
     ],
 
+    'glm' => [
+        'api_key'  => env('GLM_API_KEY', ''),
+        'base_url' => 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+        'model'    => 'glm-4-plus',
+    ],
+
 ];

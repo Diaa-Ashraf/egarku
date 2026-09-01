@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\{
     ServiceController,
     NotificationController,
     FeaturedAdsController,
+    SearchController,
+    ChatController,
 };
 
 // ── Public ───────────────────────────────────────────────────
@@ -53,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/password',      [UserController::class, 'updatePassword']);
     Route::post('/user/avatar',       [UserController::class, 'updateAvatar']);
     Route::delete('/user/account',    [UserController::class, 'deleteAccount']);
+    Route::post('/chat/vendor',       [ChatController::class, 'vendorAnalytics'])->middleware('permission:chat.vendor');
 });
 Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
     Route::get('/stats',              [DashboardController::class, 'stats']);
@@ -76,3 +79,5 @@ Route::get('/services/pricing', [ServiceController::class, 'pricing']);
 Route::post('/payment/paymob/callback', [PaymentController::class, 'paymobCallback']);
 Route::post('/payment/fawry/callback',  [PaymentController::class, 'fawryCallback']);
 Route::get('/featured-ads', [FeaturedAdsController::class, 'index']);
+Route::get('/search',       [SearchController::class, 'index']);
+Route::post('/chat',        [ChatController::class, 'search']);

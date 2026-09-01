@@ -32,6 +32,9 @@ trait AuthUser
                     'whatsapp'       => $data['whatsapp'] ?? null,
                     'company_name'   => $data['company_name'] ?? null,
                 ]);
+                $user->assignRole('vendor');
+            } else {
+                $user->assignRole('user');
             }
 
             return $user;
