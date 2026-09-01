@@ -45,18 +45,19 @@ class EgyptLoacationSeeder extends Seeder
             [27, 'سوهاج', 'Sohag', false],
         ];
 
-        foreach ($governorates as [$id, $name, $nameEn, $isExpat]) {
-            DB::table('cities')->insert([
-                'id'            => $id,
-                'name'          => $name,
-                'country'       => 'EG',
-                'is_expat_city' => $isExpat,
-                'created_at'    => now(),
-                'updated_at'    => now(),
-            ]);
+        if (DB::table('cities')->count() === 0) {
+            foreach ($governorates as [$id, $name, $nameEn, $isExpat]) {
+                DB::table('cities')->insertOrIgnore([
+                    'id'            => $id,
+                    'name'          => $name,
+                    'country'       => 'EG',
+                    'is_expat_city' => $isExpat,
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+            }
+            $this->command?->info('✅ تم إدخال 27 محافظة');
         }
-
-        $this->command->info('✅ تم إدخال 27 محافظة');
 
         // ── المدن/المناطق → areas ──────────────────────────────
         $areas = [
@@ -458,16 +459,17 @@ class EgyptLoacationSeeder extends Seeder
             [396, 27, 'الكوثر'],
         ];
 
-        foreach ($areas as [$id, $cityId, $name]) {
-            DB::table('areas')->insert([
-                'id'         => $id,
-                'city_id'    => $cityId,
-                'name'       => $name,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        if (DB::table('areas')->count() === 0) {
+            foreach ($areas as [$id, $cityId, $name]) {
+                DB::table('areas')->insertOrIgnore([
+                    'id'         => $id,
+                    'city_id'    => $cityId,
+                    'name'       => $name,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            $this->command?->info('✅ تم إدخال 396 منطقة/مدينة');
         }
-
-        $this->command->info('✅ تم إدخال 396 منطقة/مدينة');
     }
 }
