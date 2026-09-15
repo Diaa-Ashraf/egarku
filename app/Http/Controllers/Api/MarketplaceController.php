@@ -20,8 +20,11 @@ class MarketplaceController extends Controller
     public function index()
     {
         $marketplaces = Marketplace::active()
-            ->select('id', 'name', 'slug', 'icon')
+            ->select('id', 'name', 'slug', 'icon', 'image')
             ->get();
+
+        \App\Helpers\StorageUrlHelper::transformCollection($marketplaces, 'icon');
+        \App\Helpers\StorageUrlHelper::transformCollection($marketplaces, 'image');
 
         return $this->success($marketplaces);
     }

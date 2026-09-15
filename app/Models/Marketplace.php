@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Marketplace extends Model
 {
-    protected $fillable = ['name', 'slug', 'icon', 'is_active', 'sort_order'];
+    protected $fillable = ['name', 'slug', 'icon', 'image', 'is_active', 'sort_order'];
     protected $casts    = ['is_active' => 'boolean'];
 
     public function categories()

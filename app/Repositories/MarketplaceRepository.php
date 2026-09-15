@@ -16,11 +16,12 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
             $marketplace = DB::table('marketplaces')
                 ->where('slug', $slug)
                 ->where('is_active', true)
-                ->select(['id', 'name', 'slug', 'icon'])
+                ->select(['id', 'name', 'slug', 'icon', 'image'])
                 ->first();
 
             if ($marketplace) {
                 StorageUrlHelper::transformField($marketplace, 'icon');
+                StorageUrlHelper::transformField($marketplace, 'image');
             }
             return $marketplace;
         });

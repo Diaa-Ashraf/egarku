@@ -15,11 +15,12 @@ class HomeRepository implements HomeRepositoryInterface
         return Cache::remember('marketplaces_all', now()->addDay(), function () {
             $marketplaces = DB::table('marketplaces')
                 ->where('is_active', true)
-                ->select(['id', 'name', 'slug', 'icon'])
+                ->select(['id', 'name', 'slug', 'icon', 'image'])
                 ->orderBy('sort_order')
                 ->get();
 
             StorageUrlHelper::transformCollection($marketplaces, 'icon');
+            StorageUrlHelper::transformCollection($marketplaces, 'image');
             return $marketplaces;
         });
     }
@@ -114,11 +115,12 @@ class HomeRepository implements HomeRepositoryInterface
             // جيب الأسواق النشطة
             $marketplaces = DB::table('marketplaces')
                 ->where('is_active', true)
-                ->select(['id', 'name', 'slug', 'icon'])
+                ->select(['id', 'name', 'slug', 'icon', 'image'])
                 ->orderBy('sort_order')
                 ->get();
 
             StorageUrlHelper::transformCollection($marketplaces, 'icon');
+            StorageUrlHelper::transformCollection($marketplaces, 'image');
 
             // جيب كل الإعلانات المميزة النشطة
             $ads = DB::table('ads')
@@ -170,12 +172,13 @@ class HomeRepository implements HomeRepositoryInterface
             // جيب الأسواق النشطة
             $marketplaces = DB::table('marketplaces')
                 ->where('is_active', true)
-                ->select(['id', 'name', 'slug', 'icon'])
+                ->select(['id', 'name', 'slug', 'icon', 'image'])
                 ->orderBy('sort_order')
                 ->get();
 
-            // تحويل أيقونات الأسواق
+            // تحويل أيقونات وصور الأسواق
             StorageUrlHelper::transformCollection($marketplaces, 'icon');
+            StorageUrlHelper::transformCollection($marketplaces, 'image');
 
             // جيب أحدث 4 إعلانات لكل سوق — JOIN في query واحدة
             // بنستخدم ROW_NUMBER() عشان نحدد 4 لكل سوق

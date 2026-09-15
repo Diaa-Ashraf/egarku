@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Marketplaces\Schemas;
 
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -34,6 +35,14 @@ class MarketplaceForm
                             ->label('الترتيب')
                             ->numeric()
                             ->default(0),
+
+                        FileUpload::make('image')
+                            ->label('صورة السوق (الخلفية)')
+                            ->image()
+                            ->disk('public')
+                            ->directory('marketplaces')
+                            ->nullable()
+                            ->columnSpanFull(),
 
                         Toggle::make('is_active')
                             ->label('نشط')
