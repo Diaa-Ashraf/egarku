@@ -83,7 +83,10 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     {
         return Cache::remember("banners_{$position}_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId, $position) {
             $banners = DB::table('banners')
-                ->where('marketplace_id', $marketplaceId)
+                ->where(function ($q) use ($marketplaceId) {
+                    $q->where('marketplace_id', $marketplaceId)
+                      ->orWhereNull('marketplace_id');
+                })
                 ->where('position', $position)
                 ->where('is_active', true)
                 ->where(function ($q) {
@@ -104,7 +107,10 @@ class MarketplaceRepository implements MarketplaceRepositoryInterface
     {
         return Cache::remember("banner_middle_{$marketplaceId}", now()->addMinutes(30), function () use ($marketplaceId) {
             $banner = DB::table('banners')
-                ->where('marketplace_id', $marketplaceId)
+                ->where(function ($q) use ($marketplaceId) {
+                    $q->where('marketplace_id', $marketplaceId)
+                      ->orWhereNull('marketplace_id');
+                })
                 ->where('position', 'search_page')
                 ->where('is_active', true)
                 ->where(function ($q) {

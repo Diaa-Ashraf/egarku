@@ -50,6 +50,32 @@ class HomeRepository implements HomeRepositoryInterface
         });
     }
 
+    // البانرات الوسطى — Cache 30 دقيقة
+    public function getMidBanners(?int $cityId): object
+    {
+        $key = "banners_homepage_mid_{$cityId}";
+
+        return Cache::remember($key, now()->addMinutes(30), function () use ($cityId) {
+            $banners = DB::table('banners')
+                ->where('is_active', true)
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+                })
+                ->where('position', 'homepage_mid')
+                ->where(function ($q) use ($cityId) {
+                    $q->whereNull('city_id')
+                      ->orWhere('city_id', $cityId);
+                })
+                ->select(['id', 'image', 'link'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            StorageUrlHelper::transformCollection($banners, 'image');
+            return $banners;
+        });
+    }
+
     public function getFeaturedPartners(): object
     {
         return Cache::remember('featured_partners_home', now()->addMinutes(30), function () {

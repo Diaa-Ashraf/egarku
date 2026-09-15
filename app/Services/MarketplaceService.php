@@ -29,6 +29,7 @@ class MarketplaceService implements MarketplaceServiceInterface
             'amenities'         => $this->marketplaceRepository->getAmenities($marketplace->id),
             'top_banners'       => $this->marketplaceRepository->getBanners($marketplace->id, 'homepage_top'),
             'middle_banner'     => $this->marketplaceRepository->getMiddleBanner($marketplace->id),
+            'sidebar_banners'   => $this->marketplaceRepository->getBanners($marketplace->id, 'sidebar'),
             'featured_partners' => $this->marketplaceRepository->getFeaturedPartners($marketplace->id),
             'featured_ads'      => $this->marketplaceRepository->getFeaturedAds($marketplace->id),
             'ads'               => $ads->items(),
