@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
 
 Route::get('/home',                   [HomeController::class, 'index']);
 Route::get('/ads/{id}',               [AdController::class, 'show']);
+Route::get('/marketplaces',               [MarketplaceController::class, 'index']);
 Route::get('/marketplace/{slug}',     [MarketplaceController::class, 'show']);
 Route::get('/marketplace/{slug}/ads', [MarketplaceController::class, 'ads']);
 Route::get('/cities',                 [LocationController::class, 'cities']);

@@ -15,6 +15,7 @@ class HomeService implements HomeServiceInterface
     public function getHomeData(?int $cityId): array
     {
         return [
+            'marketplaces'       => $this->homeRepository->getMarketplaces(), // الفئات / الأسواق الرئيسية مع الأيقونات
             'top_banners'        => $this->homeRepository->getTopBanners($cityId),
             'featured_ads'       => $this->homeRepository->getFeaturedAds(),
             'featured_partners'  => $this->homeRepository->getFeaturedPartners(),

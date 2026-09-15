@@ -83,6 +83,14 @@ class VendorProfileForm
                         Toggle::make('is_verified')
                             ->label('موثق رسمياً'),
 
+                        \Filament\Forms\Components\FileUpload::make('verification_doc')
+                            ->label('وثيقة التوثيق (سجل تجاري / بطاقة هُوية)')
+                            ->disk('public')
+                            ->directory('verifications')
+                            ->openable()
+                            ->downloadable()
+                            ->columnSpanFull(),
+
                         TextInput::make('avg_rating')
                             ->label('متوسط التقييم')
                             ->numeric()

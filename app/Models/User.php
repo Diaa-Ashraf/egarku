@@ -105,4 +105,15 @@ class User extends Authenticatable
     {
         return $this->notifications()->where('is_read', false)->exists();
     }
+
+    protected static function booted(): void
+    {
+        $clearCache = function (User $user) {
+            \Illuminate\Support\Facades\Cache::forget("vendor_profile_{$user->id}");
+            \Illuminate\Support\Facades\Cache::forget('featured_partners_home');
+        };
+
+        static::saved($clearCache);
+        static::deleted($clearCache);
+    }
 }

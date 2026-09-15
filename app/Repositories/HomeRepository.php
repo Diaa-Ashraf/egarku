@@ -54,13 +54,25 @@ class HomeRepository implements HomeRepositoryInterface
     {
         return Cache::remember('featured_partners_home', now()->addMinutes(30), function () {
             $partners = DB::table('featured_partners')
-                ->where('is_active', true)
+                ->leftJoin('vendor_profiles', 'featured_partners.vendor_profile_id', '=', 'vendor_profiles.id')
+                ->leftJoin('users', 'vendor_profiles.user_id', '=', 'users.id')
+                ->where('featured_partners.is_active', true)
                 ->where(function ($q) {
-                    $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', now());
+                    $q->whereNull('featured_partners.expires_at')
+                      ->orWhere('featured_partners.expires_at', '>', now());
                 })
-                ->select(['id', 'name', 'logo', 'website', 'marketplace_id'])
-                ->orderBy('sort_order')
+                ->select([
+                    'featured_partners.id',
+                    'featured_partners.name',
+                    DB::raw("CASE 
+                        WHEN featured_partners.logo IS NOT NULL AND featured_partners.logo != '' AND featured_partners.logo != 'default_partner.png' 
+                        THEN featured_partners.logo 
+                        ELSE users.avatar 
+                    END as logo"),
+                    'featured_partners.website',
+                    'featured_partners.marketplace_id',
+                ])
+                ->orderBy('featured_partners.sort_order')
                 ->get();
 
             StorageUrlHelper::transformCollection($partners, 'logo');

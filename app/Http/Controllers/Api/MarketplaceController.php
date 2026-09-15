@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use App\Interfaces\Services\MarketplaceServiceInterface;
+use App\Models\Marketplace;
 use Illuminate\Http\Request;
 
 class MarketplaceController extends Controller
@@ -14,6 +15,16 @@ class MarketplaceController extends Controller
     public function __construct(
         private MarketplaceServiceInterface $marketplaceService
     ) {}
+
+    // GET /api/marketplaces — قائمة الأسواق للاختيار (تسجيل / فلاتر)
+    public function index()
+    {
+        $marketplaces = Marketplace::active()
+            ->select('id', 'name', 'slug', 'icon')
+            ->get();
+
+        return $this->success($marketplaces);
+    }
 
     // GET /api/marketplace/{slug}
     // بيانات السوق + كاتيجوريز + فيلدات + مميزات

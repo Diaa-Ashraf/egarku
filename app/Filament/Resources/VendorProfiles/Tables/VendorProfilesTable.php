@@ -149,7 +149,7 @@ class VendorProfilesTable
                             [
                                 'marketplace_id' => $record->marketplace_id,
                                 'name'           => $record->display_name ?: 'شركة بدون اسم',
-                                'logo'           => $record->user->avatar ?? 'default_partner.png',
+                                'logo'           => $record->user->avatar ?? null,
                                 'website'        => $record->website,
                                 'price'          => 0,
                                 'is_active'      => true,
